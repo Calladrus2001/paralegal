@@ -1,0 +1,4 @@
+{
+  "env": "prod",
+  "S3_BUCKET_NAME": "prod-paralegal-bucket"
+}
