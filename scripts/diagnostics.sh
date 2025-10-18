@@ -41,3 +41,13 @@ echo "$RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
   echo "📨 Body:"
   echo "$BODY" | jq .
 done
+
+echo -e "\n🔎 Listing S3 objects in bucket 'local-paralegal-bucket'..."
+S3_BUCKET="local-paralegal-bucket"
+
+aws --endpoint-url=$AWS_ENDPOINT s3 ls s3://$S3_BUCKET --recursive || {
+  echo "⚠️ Failed to list objects (bucket may not exist yet)"
+  exit 0
+}
+
+aws --endpoint-url=$AWS_ENDPOINT s3api list-objects-v2 --bucket $S3_BUCKET --query 'Contents[].{Key: Key, Size: Size}' --output json | jq .

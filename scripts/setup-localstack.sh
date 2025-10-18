@@ -16,6 +16,17 @@ done
 
 echo "✅ LocalStack is ready!"
 
+echo "📦 Starting Weaviate..."
+docker-compose up -d weaviate
+
+echo "⏳ Waiting for Weaviate to become available on http://localhost:8080 ..."
+until curl -sSf http://localhost:8080/v1/.well-known/ready >/dev/null 2>&1; do
+  sleep 2
+  echo "⌛ Still waiting for Weaviate to be ready..."
+done
+
+echo "✅ Weaviate is ready!"
+
 # Set AWS CLI env vars for LocalStack
 export AWS_ACCESS_KEY_ID=test
 export AWS_SECRET_ACCESS_KEY=test

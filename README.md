@@ -1,6 +1,6 @@
 # Paralegal
 
-To run this locally, you would need to have docker running for the localstack setup. This also requries the aws cli and terraform to be installed.
+To run this locally, you would need to have docker running for the localstack setup. This also requries the aws cli, jq, and terraform to be installed.
 If you are using windows, you can use `git bash` to run `./scripts/setup-localstack.sh`, on macOS and linux this shouldnt be an issue.
 
 #### Some useful aws cli commands
