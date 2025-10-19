@@ -1,4 +1,4 @@
-import { S3Client } from "@aws-sdk/client-s3";
+import { S3 } from "@aws-sdk/client-s3";
 
 const s3Config = (() => {
   const env = process.env.env;
@@ -19,4 +19,4 @@ const s3Config = (() => {
   }
 })();
 
-export const s3 = new S3Client(s3Config);
+export const s3 = new S3(s3Config);

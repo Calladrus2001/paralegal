@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # Config
+S3_BUCKET="local-paralegal-bucket"
 QUEUE_NAME="local-paralegal-upload-queue"
 AWS_ENDPOINT="http://localhost:4566"
 REGION="ap-south-1"
@@ -29,7 +30,6 @@ RESPONSE=$(aws --endpoint-url=$AWS_ENDPOINT sqs receive-message \
 NUM_MESSAGES=$(echo "$RESPONSE" | jq '.Messages | length')
 if [[ "$NUM_MESSAGES" -eq 0 ]]; then
   echo "✅ No messages in the queue."
-  exit 0
 fi
 
 # Print each message nicely
@@ -42,12 +42,14 @@ echo "$RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
   echo "$BODY" | jq .
 done
 
-echo -e "\n🔎 Listing S3 objects in bucket 'local-paralegal-bucket'..."
-S3_BUCKET="local-paralegal-bucket"
+echo "Listing S3 objects in bucket $S3_BUCKET..."
 
-aws --endpoint-url=$AWS_ENDPOINT s3 ls s3://$S3_BUCKET --recursive || {
-  echo "⚠️ Failed to list objects (bucket may not exist yet)"
-  exit 0
-}
+if ! aws --endpoint-url=$AWS_ENDPOINT s3 ls "s3://$S3_BUCKET" --recursive 2>/dev/null; then
+  echo "⚠️ Bucket '$S3_BUCKET' not found or empty."
+else
+  aws --endpoint-url=$AWS_ENDPOINT s3api list-objects-v2 \
+    --bucket "$S3_BUCKET" \
+    --query 'Contents[].{Key: Key, Size: Size}' \
+    --output json | jq .
+fi
 
-aws --endpoint-url=$AWS_ENDPOINT s3api list-objects-v2 --bucket $S3_BUCKET --query 'Contents[].{Key: Key, Size: Size}' --output json | jq .

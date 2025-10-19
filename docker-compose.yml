@@ -12,12 +12,14 @@ services:
     environment:
       QUERY_DEFAULTS_LIMIT: 20
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
-      # Point the persistence path to the container's data dir
       PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
       DEFAULT_VECTORIZER_MODULE: text2vec-transformers
       ENABLE_MODULES: text2vec-transformers
       TRANSFORMERS_INFERENCE_API: http://text2vec-transformers:8080
       CLUSTER_HOSTNAME: 'node1'
+    depends_on:
+      - text2vec-transformers
+
   text2vec-transformers:
     image: cr.weaviate.io/semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
     environment:
@@ -29,7 +31,7 @@ services:
     ports:
       - "4566:4566"  # Main gateway to all AWS services
     environment:
-      - SERVICES=s3,dynamodb,sqs,lambda # Add more if needed
+      - SERVICES=s3,dynamodb,sqs,lambda,iam
       - DEBUG=1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
