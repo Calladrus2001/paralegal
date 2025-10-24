@@ -37,5 +37,5 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 .terraform*
 terraform.tfstate*
 
-# Weaviate
-weaviate_data
+# Dev
+sample_pdfs

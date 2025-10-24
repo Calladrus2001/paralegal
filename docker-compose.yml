@@ -7,8 +7,6 @@ services:
     ports:
     - 8080:8080
     - 50051:50051
-    volumes:
-    - ./weaviate_data:/var/lib/weaviate
     environment:
       QUERY_DEFAULTS_LIMIT: 20
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
@@ -38,7 +36,3 @@ services:
       - AWS_DEFAULT_REGION=ap-south-1
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-
-volumes:
-  weaviate_data:
-    driver: local
