@@ -1,10 +1,10 @@
 import type { S3Event, SQSEvent } from "aws-lambda";
 import { s3 } from "../../clients/aws";
-import weaviateClient from "../../clients/weaviate";
 import { PDFParse } from "pdf-parse";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
+import paralegalVectorDbClient from "../../clients/weaviate";
 
 export const handler = async (event: SQSEvent) => {
   try {
@@ -27,18 +27,7 @@ export const handler = async (event: SQSEvent) => {
       chunkOverlap: 100,
     });
     const docs = await splitter.createDocuments([result.text]);
-    const paralegal = weaviateClient.collections.use("paralegal");
-    await Promise.all(
-      docs.map((doc, i) =>
-        paralegal.data.insert({
-          properties: {
-            text: doc.pageContent,
-            chunk_index: i,
-            source: Key,
-          },
-        })
-      )
-    );
+    await paralegalVectorDbClient.addChunksToParalegal(docs, Key);
   } catch (error: any) {
     console.error(error);
   }

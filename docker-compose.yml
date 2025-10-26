@@ -27,7 +27,7 @@ services:
     image: localstack/localstack:latest
     container_name: localstack
     ports:
-      - "4566:4566"  # Main gateway to all AWS services
+      - "4566:4566"
     environment:
       - SERVICES=s3,dynamodb,sqs,lambda,iam
       - DEBUG=1
