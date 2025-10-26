@@ -45,7 +45,7 @@ class ParalegalVectorDbClient {
 
   public async semanticQuery({ query, userId }: { query: string; userId: string }) {
     const similar_chunks = await this.paralegalCollection.query.nearText([query], {
-      limit: 10,
+      limit: 5,
       filters: {
         operator: "Equal",
         target: {
@@ -54,7 +54,7 @@ class ParalegalVectorDbClient {
         value: userId,
       },
       includeVector: false,
-      returnMetadata: 'all'
+      returnMetadata: "all",
     });
 
     return similar_chunks.objects.map((obj) => ({
