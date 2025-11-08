@@ -23,8 +23,8 @@ export const handler = async (event: SQSEvent) => {
     await parser.destroy();
 
     const splitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1000,
-      chunkOverlap: 100,
+      chunkSize: 1500,
+      chunkOverlap: 150,
     });
     const docs = await splitter.createDocuments([result.text]);
     await paralegalVectorDbClient.addChunksToParalegal(docs, Key);

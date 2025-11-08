@@ -25,7 +25,6 @@ router.post("/", validateBodyMiddleware(querySchema), async (req, res) => {
       },
       { role: "user", content: prompt },
     ],
-    max_tokens: 512,
   });
   const answer = completion.choices[0]?.message?.content || "No answer generated.";
   res.json({

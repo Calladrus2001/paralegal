@@ -1,5 +1,6 @@
 import { s3 } from "../../clients/aws";
 import { testS3EventRecord, testSQSS3Event } from "../../testfactories/aws";
+import paralegalVectorDbClient from "../../clients/weaviate";
 import { handler } from "./index";
 import fs from "fs/promises";
 import path from "path";
@@ -8,7 +9,8 @@ const Bucket = process.env.S3_BUCKET_NAME;
 const Key = `CTM-1/CD-1`;
 
 (async () => {
-  const pdfPath = path.join(__dirname, "./sample_pdfs/sample_200KB.pdf");
+  await paralegalVectorDbClient.deleteAll()
+  const pdfPath = path.join(__dirname, "./sample_pdfs/gal-gadot.pdf");
   const pdfBuffer = await fs.readFile(pdfPath);
   await handler(testSQSS3Event({ Records: [testS3EventRecord({ Bucket, Key })] }));
   await s3.putObject({

@@ -63,6 +63,16 @@ class ParalegalVectorDbClient {
       distance: obj.metadata?.distance,
     }));
   }
+
+  public async deleteAll(): Promise<void> {
+    try {
+      await this.paralegalCollection.data.deleteMany(
+        this.paralegalCollection.filter.byProperty("text").like("*")
+      );
+    } catch (error: any) {
+      console.log(error);
+    }
+  }
 }
 
 const paralegalVectorDbClient = new ParalegalVectorDbClient({
