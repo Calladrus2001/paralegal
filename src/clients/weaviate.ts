@@ -1,4 +1,5 @@
 import { connectToLocal, type WeaviateClient, type Collection } from "weaviate-client";
+import type { QueryRequest } from "../types/query";
 
 class ParalegalVectorDbClient {
   private client?: WeaviateClient;
@@ -43,15 +44,16 @@ class ParalegalVectorDbClient {
     }
   }
 
-  public async semanticQuery({ query, userId }: { query: string; userId: string }) {
+  public async semanticQuery({ query, userId, fileId }: QueryRequest) {
     const similar_chunks = await this.paralegalCollection.query.nearText([query], {
       limit: 5,
       filters: {
-        operator: "Equal",
-        target: {
-          property: "userId",
-        },
-        value: userId,
+        operator: "And",
+        value: undefined,
+        filters: [
+          { operator: "Equal", value: userId, target: { property: "userId" } },
+          { operator: "Equal", value: fileId, target: { property: "fileId" } },
+        ],
       },
       includeVector: false,
       returnMetadata: "all",
