@@ -4,6 +4,5 @@
   "AWS_ACCESS_KEY_ID": "test",
   "AWS_SECRET_ACCESS_KEY": "test",
   "AWS_DEFAULT_REGION": "ap-south-1",
-  "AWS_DEFAULT_ENDPOINT": "http://localhost:4566",
-  "OPENAI_API_KEY": "sample"
+  "AWS_DEFAULT_ENDPOINT": "http://localhost:4566"
 }

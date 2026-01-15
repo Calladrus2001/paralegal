@@ -1,6 +1,6 @@
 import express from "express";
-import uploadRouter from "./src/router/upload";
-import queryRouter from "./src/router/query";
+import uploadRouter from "./router/upload";
+import queryRouter from "./router/query";
 
 const app = express();
 const port = process.env.PORT || 3000;

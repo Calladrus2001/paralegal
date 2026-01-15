@@ -1,13 +1,32 @@
+locals {
+  env = terraform.workspace
+
+  config = {
+    local = {
+      use_localstack = true
+      prefix         = "local"
+    }
+    live = {
+      use_localstack = false
+      prefix         = "live"
+    }
+  }
+
+  current_config = lookup(local.config, local.env, local.config["live"])
+  use_localstack = local.current_config.use_localstack
+  prefix         = local.current_config.prefix
+}
+
 resource "aws_s3_bucket" "paralegal_bucket" {
-  bucket = "local-paralegal-bucket"
+  bucket = "${local.prefix}-paralegal-bucket"
 }
 
 resource "aws_s3_bucket" "lambda_bucket" {
-  bucket = "local-paralegal-lambda-bucket"
+  bucket = "${local.prefix}-paralegal-lambda-bucket"
 }
 
 resource "aws_sqs_queue" "paralegal_queue" {
-  name = "local-paralegal-upload-queue"
+  name = "${local.prefix}-paralegal-upload-queue"
 
   visibility_timeout_seconds = 30
   receive_wait_time_seconds  = 5
@@ -60,19 +79,19 @@ data "aws_iam_policy_document" "assume_role" {
 }
 
 resource "aws_iam_role" "lambda_execution_role" {
-  name               = "lambda_execution_role"
+  name               = "${local.prefix}_lambda_execution_role"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
 data "archive_file" "process_file_lambda_code" {
   type        = "zip"
-  source_file = "${path.module}/../../dist/processFileLambda/index.js"
-  output_path = "${path.module}/../../dist/processFileLambda.zip"
+  source_file = "${path.module}/../dist/processFileLambda/index.js"
+  output_path = "${path.module}/../dist/processFileLambda.zip"
 }
 
 resource "aws_lambda_function" "process_file_lambda" {
   filename         = data.archive_file.process_file_lambda_code.output_path
-  function_name    = "local_process_file_lambda"
+  function_name    = "${local.prefix}_process_file_lambda"
   role             = aws_iam_role.lambda_execution_role.arn
   handler          = "index.handler"
   source_code_hash = data.archive_file.process_file_lambda_code.output_base64sha256

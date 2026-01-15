@@ -13,8 +13,8 @@
     "typescript": "^5"
   },
   "scripts": {
-    "dev": "bun run ./src/common/run-with-env.ts config/local.json index.ts",
-    "dev:prod": "bun run ./src/common/run-with-env.ts config/prod.json index.ts",
+    "dev": "bun run ./src/common/run-with-env.ts config/local.json ./src/index.ts",
+    "dev:prod": "bun run ./src/common/run-with-env.ts config/prod.json ./src/index.ts",
     "dev:lambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/processFileLambda/dev.ts",
     "build": "bun esbuild.mjs"
   },
