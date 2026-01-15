@@ -42,7 +42,35 @@ echo "$RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
   echo "$BODY" | jq .
 done
 
-echo "Listing S3 objects in bucket $S3_BUCKET..."
+DLQ_NAME="local-paralegal-upload-dlq"
+DLQ_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url \
+  --queue-name "$DLQ_NAME" \
+  --query 'QueueUrl' --output text)
+
+echo -e "\n🔍 Fetching messages from DLQ $DLQ_NAME..."
+
+DLQ_RESPONSE=$(aws --endpoint-url=$AWS_ENDPOINT sqs receive-message \
+  --queue-url "$DLQ_URL" \
+  --max-number-of-messages 10 \
+  --visibility-timeout 0 \
+  --wait-time-seconds 1 \
+  --output json)
+
+NUM_DLQ_MESSAGES=$(echo "$DLQ_RESPONSE" | jq '.Messages | length')
+if [[ "$NUM_DLQ_MESSAGES" -eq 0 ]]; then
+  echo "✅ No messages in the DLQ."
+else
+  echo "$DLQ_RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
+    MESSAGE_ID=$(echo "$msg" | jq -r '.MessageId')
+    BODY=$(echo "$msg" | jq -r '.Body')
+
+    echo -e "\n⚠️ DLQ Message ID: $MESSAGE_ID"
+    echo "📨 Body:"
+    echo "$BODY" | jq .
+  done
+fi
+
+echo -e "\nListing S3 objects in bucket $S3_BUCKET..."
 
 if ! aws --endpoint-url=$AWS_ENDPOINT s3 ls "s3://$S3_BUCKET" --recursive 2>/dev/null; then
   echo "⚠️ Bucket '$S3_BUCKET' not found or empty."

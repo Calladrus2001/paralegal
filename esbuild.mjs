@@ -5,8 +5,8 @@ import { join } from "path";
 
 await esbuild
   .build({
-    entryPoints: ["./index.ts"],
-    entryNames: "[dir]/index",
+    entryPoints: ["./src/index.ts"],
+    entryNames: "index",
     tsconfig: "./tsconfig.json",
     bundle: true,
     minify: true,
@@ -17,7 +17,7 @@ await esbuild
     outdir: "./dist",
     logLevel: "info",
   })
-  .then((res) => console.log(`esbuild result: ${res}`))
+  .then((res) => console.log(`esbuild result: ${JSON.stringify(res)}`))
   .catch(() => process.exit(1));
 
 const lambdaOutDir = "./dist/processFileLambda";
@@ -35,7 +35,7 @@ await esbuild
     outdir: lambdaOutDir,
     logLevel: "info",
   })
-  .then((res) => console.log(`processFileLambda esbuild result: ${res}`))
+  .then((res) => console.log(`processFileLambda esbuild result: ${JSON.stringify(res)}`))
   .catch(() => process.exit(1));
 
 if (existsSync(lambdaOutDir)) {
