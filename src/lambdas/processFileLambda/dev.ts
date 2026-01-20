@@ -9,7 +9,6 @@ const Bucket = process.env.S3_BUCKET_NAME;
 const Key = `CTM-1/CD-1`;
 
 (async () => {
-  await paralegalVectorDbClient.deleteAll()
   const pdfPath = path.join(__dirname, "./sample_pdfs/gal-gadot.pdf");
   const pdfBuffer = await fs.readFile(pdfPath);
   await handler(testSQSS3Event({ Records: [testS3EventRecord({ Bucket, Key })] }));

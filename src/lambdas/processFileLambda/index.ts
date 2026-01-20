@@ -12,6 +12,8 @@ export const handler = async (event: SQSEvent) => {
     const s3Record = s3Event.Records[0]!.s3;
     const Bucket = s3Record.bucket.name;
     const Key = s3Record.object.key;
+    const [userId, fileId] = Key.split("/");
+    if (!userId || !fileId) throw new Error("Invalid Key");
 
     const command = new GetObjectCommand({ Bucket, Key });
     const presignedUrl = await getSignedUrl(s3, command, { expiresIn: 900 });
@@ -27,8 +29,11 @@ export const handler = async (event: SQSEvent) => {
       chunkOverlap: 150,
     });
     const docs = await splitter.createDocuments([result.text]);
-    await paralegalVectorDbClient.addChunksToParalegal(docs, Key);
+
+    await paralegalVectorDbClient.deleteFileChunks(userId, fileId); // for idempotency
+    await paralegalVectorDbClient.addChunksToParalegal(docs, userId, fileId);
   } catch (error: any) {
     console.error(error);
+    throw error;
   }
 };
