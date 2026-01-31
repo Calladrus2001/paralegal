@@ -1,6 +1,6 @@
 import type { S3Event, SQSEvent } from "aws-lambda";
 import { s3 } from "../../clients/aws";
-import { PDFParse } from "pdf-parse";
+import PDFParse from "pdf-parse";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
@@ -20,10 +20,7 @@ export const handler = async (event: SQSEvent) => {
     const res = await fetch(presignedUrl);
     const arrayBuffer = await res.arrayBuffer();
 
-    const parser = new PDFParse({ data: arrayBuffer });
-    const result = await parser.getText();
-    await parser.destroy();
-
+    const result = await PDFParse(Buffer.from(arrayBuffer));
     const splitter = new RecursiveCharacterTextSplitter({
       chunkSize: 1500,
       chunkOverlap: 150,

@@ -3,13 +3,17 @@ import type { QueryRequest } from "../types/query";
 import type { ParalegalRecord } from "../types/weaviate";
 
 class ParalegalVectorDbClient {
-  private client!: WeaviateClient;
+  private client?: WeaviateClient;
   private paralegalCollection!: Collection<ParalegalRecord>;
 
   private async init(): Promise<void> {
     if (this.client) return;
 
-    this.client = await connectToLocal();
+    this.client = await connectToLocal({
+      host: process.env.WEAVIATE_HOST || "localhost",
+      port: 8080,
+      grpcPort: 50051,
+    });
     await this.client.isReady();
 
     const collections = await this.client.collections.listAll();

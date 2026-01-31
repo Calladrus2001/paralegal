@@ -23,7 +23,8 @@ router.post("/", validateBodyMiddleware(querySchema), async (req, res) => {
       ],
     });
 
-    res.json(response);
+    const finalMessage = response.messages[response.messages.length - 1];
+    res.json(finalMessage?.content);
   } catch (err: any) {
     console.error("Agent error:", err);
     res.status(500).json({ error: err.message });

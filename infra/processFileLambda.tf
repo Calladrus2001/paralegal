@@ -18,7 +18,7 @@ resource "aws_iam_role" "lambda_execution_role" {
 
 data "archive_file" "process_file_lambda_code" {
   type        = "zip"
-  source_file = "${path.module}/../dist/processFileLambda/index.js"
+  source_dir  = "${path.module}/../dist/processFileLambda"
   output_path = "${path.module}/../dist/processFileLambda.zip"
 }
 
@@ -34,6 +34,8 @@ resource "aws_lambda_function" "process_file_lambda" {
   s3_key           = aws_s3_object.process_file_lambda_zip.key
   function_name    = "${local.prefix}_process_file_lambda"
   role             = aws_iam_role.lambda_execution_role.arn
+  memory_size      = 256
+  timeout          = 90
   handler          = "index.handler"
   source_code_hash = data.archive_file.process_file_lambda_code.output_base64sha256
 
@@ -41,7 +43,8 @@ resource "aws_lambda_function" "process_file_lambda" {
 
   environment {
     variables = {
-      LOG_LEVEL = "info"
+      LOG_LEVEL     = "info"
+      WEAVIATE_HOST = local.use_localstack ? "weaviate" : "localhost"
     }
   }
 }

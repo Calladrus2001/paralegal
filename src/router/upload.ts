@@ -13,7 +13,8 @@ router.post("/", validateBodyMiddleware(presignMetadataSchema), async (req, res)
   const bucket = process.env.S3_BUCKET_NAME;
 
   const userId = metadata.userId;
-  const key = `${userId}/${nanoid()}`;
+  const fileId = nanoid();
+  const key = `${userId}/${fileId}`;
 
   const command = new PutObjectCommand({
     Bucket: bucket,
@@ -22,7 +23,7 @@ router.post("/", validateBodyMiddleware(presignMetadataSchema), async (req, res)
   });
   try {
     const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes
-    res.json({ url, key });
+    res.json({ url, fileId });
   } catch (err) {
     res.status(500).json({
       error: "Failed to generate presigned URL",

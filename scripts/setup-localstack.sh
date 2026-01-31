@@ -35,7 +35,9 @@ export AWS_ENDPOINT=http://localhost:4566
 
 echo "🚀 Provisioning AWS resources..."
 
-cd ../infra
+cd ..
+bun run build
+cd ./infra
 terraform init
 terraform workspace select local || terraform workspace new local
 terraform apply -auto-approve
