@@ -4,7 +4,7 @@ import paralegalVectorDbClient from "../clients/weaviate";
 
 export const fetchChunksTool = tool(
   async ({ query, userId, fileId }) => {
-    const result = await paralegalVectorDbClient.semanticQuery({ query, userId, fileId });
+    const result = await paralegalVectorDbClient.search({ query, userId, fileId });
     return JSON.stringify(result);
   },
   {

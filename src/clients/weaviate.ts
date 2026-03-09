@@ -73,22 +73,24 @@ class ParalegalVectorDbClient {
     }
   }
 
-  public async semanticQuery({ query, userId, fileId }: QueryRequest) {
+  public async search({ query, userId, fileId }: QueryRequest) {
     try {
       await this.init();
-      const similar_chunks = await this.paralegalCollection.query.nearText([query], {
-        limit: 5,
+      const similar_chunks = await this.paralegalCollection.query.hybrid(query, {
+        limit: 10,
+        alpha: 0.5,
+        fusionType: "RelativeScore",
         filters: Filters.and(
           this.paralegalCollection.filter.byProperty("userId").equal(userId),
           this.paralegalCollection.filter.byProperty("fileId").equal(fileId)
         ),
-        returnMetadata: ["distance"],
+        returnMetadata: ["score", "explainScore"],
       });
 
       return similar_chunks.objects.map((obj) => ({
         text: obj.properties.text,
         chunk_index: obj.properties.chunk_index,
-        distance: obj.metadata?.distance,
+        score: obj.metadata?.score,
       }));
     } catch (error: any) {
       console.error(error);

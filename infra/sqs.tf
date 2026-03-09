@@ -1,7 +1,7 @@
 resource "aws_sqs_queue" "paralegal_queue" {
   name = "${local.prefix}-paralegal-upload-queue"
 
-  visibility_timeout_seconds = 30
+  visibility_timeout_seconds = 90
   receive_wait_time_seconds  = 5
 
   redrive_policy = jsonencode({
