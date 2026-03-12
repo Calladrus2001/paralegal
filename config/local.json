@@ -4,5 +4,8 @@
   "AWS_ACCESS_KEY_ID": "test",
   "AWS_SECRET_ACCESS_KEY": "test",
   "AWS_DEFAULT_REGION": "ap-south-1",
-  "AWS_DEFAULT_ENDPOINT": "http://localhost:4566"
+  "AWS_DEFAULT_ENDPOINT": "http://localhost:4566",
+  "REDIS_HOST": "localhost",
+  "REDIS_PORT": "6379",
+  "REDIS_SESSION_TTL_SECONDS": "86400"
 }

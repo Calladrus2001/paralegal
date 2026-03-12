@@ -1,5 +1,5 @@
 import { tool } from "langchain";
-import { querySchema } from "../types/query";
+import { SearchQuerySchema } from "../types/query";
 import paralegalVectorDbClient from "../clients/weaviate";
 
 export const fetchChunksTool = tool(
@@ -10,6 +10,6 @@ export const fetchChunksTool = tool(
   {
     name: "fetchRelevantChunks",
     description: "Retrieve relevant chunks from the vector DB based on a query",
-    schema: querySchema,
+    schema: SearchQuerySchema,
   }
 );

@@ -5,27 +5,30 @@ echo "🧹 Tearing down existing containers..."
 docker stop $(docker ps -q) 2>/dev/null || true
 docker rm $(docker ps -aq) 2>/dev/null || true
 
-echo "📦 Starting LocalStack..."
-docker-compose up -d localstack
+echo "📦 Starting all services..."
+docker-compose up -d
 
-echo "⏳ Waiting for LocalStack to become available..."
+echo "⏳ Waiting for services to become available..."
+
+# Wait for LocalStack
 until docker logs localstack 2>&1 | grep -q "Ready."; do
   sleep 2
   echo "⌛ Still waiting for LocalStack to be ready..."
 done
 
-echo "✅ LocalStack is ready!"
-
-echo "📦 Starting Weaviate..."
-docker-compose up -d weaviate
-
-echo "⏳ Waiting for Weaviate to become available on http://localhost:8080 ..."
+# Wait for Weaviate
 until curl -sSf http://localhost:8080/v1/.well-known/ready >/dev/null 2>&1; do
   sleep 2
   echo "⌛ Still waiting for Weaviate to be ready..."
 done
 
-echo "✅ Weaviate is ready!"
+# Wait for Redis
+until docker exec -it $(docker ps -q --filter ancestor=redis:alpine) redis-cli ping | grep -q "PONG"; do
+  sleep 2
+  echo "⌛ Still waiting for Redis to be ready..."
+done
+
+echo "✅ Services are ready!"
 
 # Set AWS CLI env vars for LocalStack
 export AWS_ACCESS_KEY_ID=test

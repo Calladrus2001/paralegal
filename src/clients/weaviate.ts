@@ -1,5 +1,5 @@
 import { connectToLocal, Filters, type WeaviateClient, type Collection } from "weaviate-client";
-import type { QueryRequest } from "../types/query";
+import type { SearchQuery } from "../types/query";
 import type { ParalegalRecord } from "../types/weaviate";
 
 class ParalegalVectorDbClient {
@@ -73,7 +73,7 @@ class ParalegalVectorDbClient {
     }
   }
 
-  public async search({ query, userId, fileId }: QueryRequest) {
+  public async search({ query, userId, fileId }: SearchQuery) {
     try {
       await this.init();
       const similar_chunks = await this.paralegalCollection.query.hybrid(query, {
