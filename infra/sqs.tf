@@ -37,3 +37,31 @@ resource "aws_sqs_queue_policy" "allow_s3" {
     ]
   })
 }
+
+resource "aws_sqs_queue" "paralegal_attribution_queue" {
+  name = "${local.prefix}-paralegal-attribution-queue"
+  visibility_timeout_seconds = 30
+  
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.paralegal_attribution_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+resource "aws_sqs_queue" "paralegal_attribution_dlq" {
+  name = "${local.prefix}-paralegal-attribution-dlq"
+}
+
+resource "aws_sqs_queue" "paralegal_scoring_queue" {
+  name = "${local.prefix}-paralegal-scoring-queue"
+  visibility_timeout_seconds = 30
+
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.paralegal_scoring_dlq.arn
+    maxReceiveCount     = 3
+  })
+}
+
+resource "aws_sqs_queue" "paralegal_scoring_dlq" {
+  name = "${local.prefix}-paralegal-scoring-dlq"
+}

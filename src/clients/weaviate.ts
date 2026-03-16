@@ -98,6 +98,33 @@ class ParalegalVectorDbClient {
       throw error
     }
   }
+
+  public async findAttributedChunks(responseText: string, candidateIds: string[]) {
+    if (!candidateIds.length) return [];
+
+    try {
+      await this.init();
+      const idFilter = this.paralegalCollection.filter.byId().containsAny(candidateIds);
+
+      // Weaviate's `certainty` maps 1:1 to cosine similarity on a 0-1 scale.
+      // (1 - distance) = similarity. So a >0.75 similarity threshold means a distance <0.25.
+      const thresholdDistance = 0.25;
+      const results = await this.paralegalCollection.query.nearText(responseText, {
+        filters: idFilter,
+        distance: thresholdDistance,
+        returnMetadata: ["distance", "certainty"],
+        limit: candidateIds.length,
+      });
+
+      return results.objects.map((obj) => ({
+        id: obj.uuid,
+        confidence: obj.metadata?.certainty ?? (1 - (obj.metadata?.distance ?? 1)),
+      }));
+    } catch (error: any) {
+      console.error("Failed to run chunk attribution similarity:", error);
+      throw error;
+    }
+  }
 }
 
 const paralegalVectorDbClient = new ParalegalVectorDbClient();

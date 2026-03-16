@@ -1,4 +1,5 @@
 import { S3 } from "@aws-sdk/client-s3";
+import { SQSClient } from "@aws-sdk/client-sqs";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
@@ -36,3 +37,7 @@ export const dynamo = DynamoDBDocumentClient.from(dynamoClient, {
 export const CHATS_TABLE = process.env.DYNAMODB_CHATS_TABLE!;
 export const MESSAGES_TABLE = process.env.DYNAMODB_MESSAGES_TABLE!;
 export const FEEDBACKS_TABLE = process.env.DYNAMODB_FEEDBACKS_TABLE!;
+
+export const sqsClient = new SQSClient(awsConfig);
+export const ATTRIBUTION_QUEUE_URL = process.env.SQS_ATTRIBUTION_QUEUE_URL!;
+export const SCORING_QUEUE_URL = process.env.SQS_SCORING_QUEUE_URL!;

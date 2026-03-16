@@ -1,24 +1,7 @@
 import { PutCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo, CHATS_TABLE, MESSAGES_TABLE } from "../clients/aws";
 
-export interface ChatRecord {
-  chatId: string;
-  userId: string;
-  chatTitle: string;
-  createdAt: string;
-  lastMessageAt: string;
-}
-
-export interface MessageRecord {
-  responseId: string;
-  chatId: string;
-  userId: string;
-  query: string;
-  response: string;
-  retrievedChunkIds?: string[];
-  retrievedScores?: number[];
-  createdAt: string;
-}
+import type { ChatRecord, MessageRecord } from "../types/chat";
 
 export class ChatService {
   /**
@@ -94,5 +77,22 @@ export class ChatService {
     });
 
     await dynamo.send(command);
+  }
+
+  /**
+   * Lookup a specific message by its responseId using the GSI.
+   */
+  static async getMessageByResponseId(responseId: string): Promise<MessageRecord | undefined> {
+    const command = new QueryCommand({
+      TableName: MESSAGES_TABLE,
+      IndexName: "responseId-index",
+      KeyConditionExpression: "responseId = :rid",
+      ExpressionAttributeValues: {
+        ":rid": responseId,
+      },
+    });
+
+    const result = await dynamo.send(command);
+    return result.Items?.[0] as MessageRecord | undefined;
   }
 }

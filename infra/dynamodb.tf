@@ -61,10 +61,12 @@ resource "aws_dynamodb_table" "paralegal_messages" {
 # GSI: query all feedbacks by status (human queue)
 # ───────────────────────────────────────────
 resource "aws_dynamodb_table" "paralegal_feedbacks" {
-  name         = "${local.prefix}-paralegal-feedbacks"
-  billing_mode = "PAY_PER_REQUEST"
-  hash_key     = "responseId"
-  range_key    = "createdAt"
+  name             = "${local.prefix}-paralegal-feedbacks"
+  billing_mode     = "PAY_PER_REQUEST"
+  hash_key         = "responseId"
+  range_key        = "createdAt"
+  stream_enabled   = true
+  stream_view_type = "NEW_AND_OLD_IMAGES"
 
   attribute {
     name = "responseId"
