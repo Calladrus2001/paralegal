@@ -1,11 +1,13 @@
 import { S3 } from "@aws-sdk/client-s3";
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 
-const s3Config = (() => {
-  const env = process.env.env;
-  if (env === "local") {
+const isLocal = process.env.env === "local";
+
+const awsConfig = (() => {
+  if (isLocal) {
     return {
       region: "ap-south-1",
-      forcePathStyle: true,
       endpoint: process.env.AWS_DEFAULT_ENDPOINT,
       credentials: {
         accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
@@ -19,4 +21,18 @@ const s3Config = (() => {
   }
 })();
 
-export const s3 = new S3(s3Config);
+export const s3 = new S3({
+  ...awsConfig,
+  forcePathStyle: isLocal,
+});
+
+const dynamoClient = new DynamoDBClient(awsConfig);
+export const dynamo = DynamoDBDocumentClient.from(dynamoClient, {
+  marshallOptions: {
+    removeUndefinedValues: true,
+  },
+});
+
+export const CHATS_TABLE = process.env.DYNAMODB_CHATS_TABLE!;
+export const MESSAGES_TABLE = process.env.DYNAMODB_MESSAGES_TABLE!;
+export const FEEDBACKS_TABLE = process.env.DYNAMODB_FEEDBACKS_TABLE!;

@@ -1,4 +1,12 @@
 {
   "env": "prod",
-  "S3_BUCKET_NAME": "prod-paralegal-bucket"
+  "S3_BUCKET_NAME": "prod-paralegal-bucket",
+  "DYNAMODB_CHATS_TABLE": "live-paralegal-chats",
+  "DYNAMODB_MESSAGES_TABLE": "live-paralegal-messages",
+  "DYNAMODB_FEEDBACKS_TABLE": "live-paralegal-feedbacks",
+  "REDIS_HOST": "INJECT_VIA_ECS_ENV",
+  "REDIS_PORT": "6379",
+  "REDIS_SESSION_TTL_SECONDS": "86400",
+  "AWS_DEFAULT_REGION": "ap-south-1",
+  "OPENAI_API_KEY": "INJECT_VIA_SECRETS_MANAGER"
 }

@@ -88,6 +88,7 @@ class ParalegalVectorDbClient {
       });
 
       return similar_chunks.objects.map((obj) => ({
+        id: obj.uuid,
         text: obj.properties.text,
         chunk_index: obj.properties.chunk_index,
         score: obj.metadata?.score,

@@ -2,8 +2,10 @@ import { createAgent } from "langchain";
 import { ChatOpenAI } from "@langchain/openai";
 import { fetchChunksTool } from "../tools";
 
+export const CHAT_MODEL = "gpt-4o";
+
 export const model = new ChatOpenAI({
-  model: "gpt-4o",
+  model: CHAT_MODEL,
   temperature: 0.1,
   apiKey: process.env.OPENAI_API_KEY,
 });

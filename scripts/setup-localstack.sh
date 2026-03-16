@@ -28,6 +28,12 @@ until docker exec -it $(docker ps -q --filter ancestor=redis:alpine) redis-cli p
   echo "⌛ Still waiting for Redis to be ready..."
 done
 
+# Wait for DynamoDB Admin
+until curl -s http://localhost:8001 >/dev/null 2>&1; do
+  sleep 2
+  echo "⌛ Still waiting for DynamoDB Admin to be ready..."
+done
+
 echo "✅ Services are ready!"
 
 # Set AWS CLI env vars for LocalStack

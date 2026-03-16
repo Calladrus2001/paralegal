@@ -1,4 +1,5 @@
 import express from "express";
+import type { Request, Response, NextFunction } from "express";
 import uploadRouter from "./router/upload";
 import queryRouter from "./router/query";
 
@@ -13,6 +14,11 @@ app.get("/health", (_req, res) => {
 
 app.use("/upload", uploadRouter);
 app.use("/query", queryRouter);
+
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: err.message ?? "Internal server error" });
+});
 
 app.listen(port, () => {
   console.log(`Express server listening on port ${port}`);

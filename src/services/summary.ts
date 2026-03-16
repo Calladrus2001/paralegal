@@ -11,7 +11,9 @@ export interface ChatContext {
   lastTurn: Turn | null;
 }
 
-export class ChatHistoryService {
+const TTL = parseInt(process.env.REDIS_SESSION_TTL_SECONDS ?? "86400", 10);
+
+export class ChatSummaryService {
   private static getSummaryKey(chatId: string) {
     return `summary:${chatId}`;
   }
@@ -46,41 +48,37 @@ export class ChatHistoryService {
 
     const { summary, lastTurn } = await this.getContext(chatId);
 
-    try {
-      const summaryInstructions = `
-        Your task is to maintain a concise, factual case summary for a Legal Q&A assistant.
-        - Format: Use bullet points.
-        - Tone: Professional and objective.
-        - Length: Strictly under 200 words.
-        - Update: Integrate new facts from the provided turn into the existing summary.
-      `;
+    const summaryInstructions = `
+      Your task is to maintain a concise, factual case summary for a Legal Q&A assistant.
+      - Format: Use bullet points.
+      - Tone: Professional and objective.
+      - Length: Strictly under 200 words.
+      - Update: Integrate new facts from the provided turn into the existing summary.
+    `;
 
-      const summaryData = `
-        Existing Summary: ${summary || "None"}
-        Previous Turn: ${lastTurn ? `User: ${lastTurn.user}\nAI: ${lastTurn.assistant}` : "None"}
-        New Interaction:
-        User Question: ${query}
-        AI Response: ${assistantResponse}
-      `;
+    const summaryData = `
+      Existing Summary: ${summary || "None"}
+      Previous Turn: ${lastTurn ? `User: ${lastTurn.user}\nAI: ${lastTurn.assistant}` : "None"}
+      New Interaction:
+      User Question: ${query}
+      AI Response: ${assistantResponse}
+    `;
 
-      const summaryResponse = await summarizerModel.invoke([
-        { role: "system", content: summaryInstructions },
-        { role: "user", content: summaryData },
-      ]);
-      const newSummary = summaryResponse.content;
+    const summaryResponse = await summarizerModel.invoke([
+      { role: "system", content: summaryInstructions },
+      { role: "user", content: summaryData },
+    ]);
+    const newSummary = summaryResponse.content;
 
-      await redis
-        .pipeline()
-        .set(summaryKey, newSummary as string, "EX", ttl)
-        .set(
-          lastTurnKey,
-          JSON.stringify({ user: query, assistant: assistantResponse }),
-          "EX",
-          ttl
-        )
-        .exec();
-    } catch (err) {
-      console.error("Failed to update context memory:", err);
-    }
+    await redis
+      .pipeline()
+      .set(summaryKey, newSummary as string, "EX", TTL)
+      .set(
+        lastTurnKey,
+        JSON.stringify({ user: query, assistant: assistantResponse }),
+        "EX",
+        TTL
+      )
+      .exec();
   }
 }

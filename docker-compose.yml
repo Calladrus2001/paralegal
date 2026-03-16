@@ -37,6 +37,18 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
 
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://localstack:4566
+      - AWS_REGION=ap-south-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+    depends_on:
+      - localstack
+
   redis:
     image: redis:alpine
     ports:
@@ -46,5 +58,9 @@ services:
     image: redis/redisinsight:latest
     ports:
       - "5540:5540"
+    environment:
+      - RI_REDIS_HOST=redis
+      - RI_REDIS_PORT=6379
+      - RI_REDIS_ALIAS=Paralegal-Redis
     depends_on:
       - redis

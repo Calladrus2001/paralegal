@@ -3,48 +3,88 @@ import { validateBodyMiddleware } from "../middleware/validateBodyMiddleware";
 import { ChatRequestSchema } from "../types/query";
 import type { ChatRequest } from "../types/query";
 import { pdfAgent } from "../clients/openai";
-import { ChatHistoryService } from "../services/history";
+import { ChatSummaryService } from "../services/summary";
+import { ChatService } from "../services/chat";
+import pRetry from "p-retry";
+import { nanoid } from "nanoid";
+import { buildAgentMessages } from "../tools";
 
 const router = Router();
+
+
+function persistQueryRecord(params: {
+  chatId: string;
+  userId: string;
+  query: string;
+  responseId: string;
+  assistantResponse: string;
+  agentMessages: any[];
+}) {
+  const { chatId, userId, query, responseId, assistantResponse, agentMessages } = params;
+
+  const toolMsg = agentMessages.find(
+    (m) => m.name === "fetchRelevantChunks" && typeof m.content === "string"
+  );
+
+  const { retrievedChunkIds, retrievedScores } = (() => {
+    if (toolMsg) {
+      try {
+        const chunks = JSON.parse(toolMsg.content as string);
+        if (Array.isArray(chunks) && chunks.length > 0) {
+          return {
+            retrievedChunkIds: chunks.map((c: any) => c.id).filter(Boolean),
+            retrievedScores: chunks.map((c: any) => c.score).filter(Boolean),
+          };
+        }
+      } catch (e) {
+        console.error("Failed to parse tool message content", e);
+      }
+    }
+    return { retrievedChunkIds: undefined, retrievedScores: undefined };
+  })();
+
+  Promise.allSettled([
+    pRetry(
+      () => ChatSummaryService.updateContext(chatId, query, assistantResponse),
+      { retries: 3 }
+    ),
+    pRetry(
+      () =>
+        ChatService.addMessage({
+          responseId,
+          chatId,
+          userId,
+          query,
+          response: assistantResponse,
+          retrievedChunkIds,
+          retrievedScores,
+          createdAt: new Date().toISOString(),
+        }),
+      { retries: 3 }
+    ),
+  ]).then((results) => {
+    const failures = results.filter((r) => r.status === "rejected");
+    failures.forEach((failure) => {
+      console.error("Permanent background write failure:", failure);
+    });
+  });
+}
 
 router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => {
   try {
     const { userId, fileId, chatId, query } = req.body as ChatRequest;
 
-    const { summary, lastTurn } = await ChatHistoryService.getContext(chatId);
-    const messages: any[] = [];
-
-    if (summary) {
-      messages.push({
-        role: "system",
-        content: `CONCISED CONTEXT OF LEGAL CASE:\n${summary}`,
-      });
-    }
-
-    if (lastTurn) {
-      messages.push({ role: "user", content: lastTurn.user });
-      messages.push({ role: "assistant", content: lastTurn.assistant });
-    }
-
-    const structuredQuery = `
-      [Session Metadata]
-      UserId: ${userId}
-      FileId: ${fileId}
-      ChatId: ${chatId}
-
-      [User Query]
-      ${query}
-    `.trim();
-
-    messages.push({ role: "user", content: structuredQuery });
-
+    const messages = await buildAgentMessages(chatId, userId, fileId, query);
     const response = await pdfAgent.invoke({ messages });
-    const assistantResponse = response.messages[response.messages.length - 1]?.content;
 
-    ChatHistoryService.updateContext(chatId, query, assistantResponse as string)
-      .catch(err => console.error("History service update leaked error:", err));
+    const responseId = nanoid();
+    const assistantResponse = response.messages[response.messages.length - 1]?.content as string;
 
     res.json(assistantResponse);
+
+    res.on("finish", () =>
+      persistQueryRecord({ chatId, userId, query, responseId, assistantResponse, agentMessages: response.messages })
+    );
   } catch (err: any) {
     console.error("Agent error:", err);
     res.status(500).json({ error: err.message });
