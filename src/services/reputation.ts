@@ -2,6 +2,7 @@ import { GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { redis } from "../clients/redis";
 import { dynamo, STATS_TABLE } from "../clients/aws";
 import paralegalVectorDbClient from "../clients/weaviate";
+import { CorrectionService } from "./correction";
 import type { ChunkStats } from "../types/reputation";
 
 export class ReputationService {
@@ -112,6 +113,11 @@ export class ReputationService {
     }));
 
     await paralegalVectorDbClient.updateChunkReputation(chunkId, newScore, tier);
+
+    // Trigger Correction Sync if the block is under scrutiny
+    if (tier === "DEGRADE" || tier === "FLAG") {
+      await CorrectionService.syncChunkCorrections(chunkId);
+    }
 
     // 7. Success! Now safe to clear Redis counters
     await redis.del(retrievalKey, penaltyKey);

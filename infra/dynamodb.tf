@@ -78,17 +78,7 @@ resource "aws_dynamodb_table" "paralegal_feedbacks" {
     type = "S"
   }
 
-  attribute {
-    name = "status"
-    type = "S"
-  }
 
-  global_secondary_index {
-    name            = "status-index"
-    hash_key        = "status"
-    range_key       = "createdAt"
-    projection_type = "ALL"
-  }
 }
 
 # ───────────────────────────────────────────
@@ -103,6 +93,29 @@ resource "aws_dynamodb_table" "paralegal_chunk_stats" {
 
   attribute {
     name = "chunkId"
+    type = "S"
+  }
+}
+
+# ───────────────────────────────────────────
+# Chunk Attributions table
+# PK: chunkId
+# SK: createdAt_responseId
+# Access: fetch all feedback attribution mapped to a chunk
+# ───────────────────────────────────────────
+resource "aws_dynamodb_table" "paralegal_chunk_attributions" {
+  name         = "${local.prefix}-paralegal-chunk-attributions"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "chunkId"
+  range_key    = "createdAt_responseId"
+
+  attribute {
+    name = "chunkId"
+    type = "S"
+  }
+
+  attribute {
+    name = "createdAt_responseId"
     type = "S"
   }
 }

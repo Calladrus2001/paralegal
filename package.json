@@ -17,7 +17,9 @@
   "scripts": {
     "dev": "bun run ./src/common/run-with-env.ts config/local.json ./src/index.ts",
     "dev:prod": "bun run ./src/common/run-with-env.ts config/prod.json ./src/index.ts",
-    "dev:lambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/processFileLambda/dev.ts",
+    "dev:processFileLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/processFileLambda/dev.ts",
+    "dev:flushLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/flushLambda/dev.ts",
+    "dev:attributionLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/attributionLambda/dev.ts",
     "build": "bun esbuild.mjs"
   },
   "dependencies": {

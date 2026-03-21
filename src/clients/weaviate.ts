@@ -1,6 +1,6 @@
 import { connectToLocal, Filters, type WeaviateClient, type Collection } from "weaviate-client";
 import type { SearchQuery } from "../types/query";
-import type { ParalegalRecord } from "../types/weaviate";
+import type { ParalegalRecord, Correction } from "../types/weaviate";
 
 class ParalegalVectorDbClient {
   private client?: WeaviateClient;
@@ -27,6 +27,7 @@ class ParalegalVectorDbClient {
           { name: "fileId", dataType: "text" },
           { name: "feedback_score", dataType: "number" },
           { name: "feedback_tier", dataType: "text" },
+          { name: "corrections", dataType: "text" },
         ],
       });
     }
@@ -78,8 +79,12 @@ class ParalegalVectorDbClient {
   public async search({ query, userId, fileId }: SearchQuery) {
     try {
       await this.init();
+
+      const TARGET_LIMIT = 10;
+      const DEGRADE_PENALTY = 0.75;
+
       const similar_chunks = await this.paralegalCollection.query.hybrid(query, {
-        limit: 10,
+        limit: TARGET_LIMIT,
         alpha: 0.5,
         fusionType: "RelativeScore",
         filters: Filters.and(
@@ -89,46 +94,78 @@ class ParalegalVectorDbClient {
         returnMetadata: ["score", "explainScore"],
       });
 
-      return similar_chunks.objects.map((obj) => ({
-        id: obj.uuid,
-        text: obj.properties.text,
-        chunk_index: obj.properties.chunk_index,
-        score: obj.metadata?.score,
-      }));
+      return similar_chunks.objects
+        .filter((obj) => obj.properties.feedback_tier !== "FLAG")
+        .map((obj) => {
+          let chunkText = obj.properties.text;
+          const rawCorrections = obj.properties.corrections;
+
+          if (rawCorrections) {
+            try {
+              const corrections: Correction[] = typeof rawCorrections === "string"
+                ? JSON.parse(rawCorrections)
+                : rawCorrections;
+
+              if (Array.isArray(corrections) && corrections.length > 0) {
+                const uncontested = corrections.filter(c => !c.contested);
+                const contested = corrections.filter(c => c.contested);
+
+                let patchStr = "";
+                if (uncontested.length > 0) {
+                  patchStr += `\n\n[SYSTEM OVERRIDE]: The following information in this chunk is known to be INCORRECT. Apply these corrections:\n` + uncontested.map(c => `- Incorrect: "${c.incorrect_claim}" -> Correct: "${c.correct_value}"`).join("\n");
+                }
+                if (contested.length > 0) {
+                  patchStr += `\n\n[SYSTEM WARNING]: Users have submitted CONFLICTING feedback about the following claims in this chunk. You MUST warn the user that this information is disputed and they should verify safely on their own:\n` + contested.map(c => `- Disputed claim: "${c.incorrect_claim}" -> Users disagree whether it should be: "${c.correct_value}"`).join("\n");
+                }
+
+                if (patchStr) {
+                  chunkText += patchStr;
+                }
+              }
+            } catch (e) {
+              console.error("Failed to parse corrections for chunk", obj.uuid, e);
+            }
+          }
+
+          const rawScore = obj.metadata?.score ?? 0;
+          const tier = obj.properties.feedback_tier;
+          const adjustedScore = tier === "DEGRADE" ? rawScore * DEGRADE_PENALTY : rawScore;
+
+          return {
+            id: obj.uuid,
+            text: chunkText,
+            chunk_index: obj.properties.chunk_index,
+            score: adjustedScore,
+            tier: tier ?? "HEALTHY",
+          };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, TARGET_LIMIT);
+
     } catch (error: any) {
       console.error(error);
-      throw error
-    }
-  }
-
-  public async findAttributedChunks(responseText: string, candidateIds: string[]) {
-    if (!candidateIds.length) return [];
-
-    try {
-      await this.init();
-      const idFilter = this.paralegalCollection.filter.byId().containsAny(candidateIds);
-
-      // Weaviate's `certainty` maps 1:1 to cosine similarity on a 0-1 scale.
-      // (1 - distance) = similarity. So a >0.75 similarity threshold means a distance <0.25.
-      const thresholdDistance = 0.25;
-      const results = await this.paralegalCollection.query.nearText(responseText, {
-        filters: idFilter,
-        distance: thresholdDistance,
-        returnMetadata: ["distance", "certainty"],
-        limit: candidateIds.length,
-      });
-
-      return results.objects.map((obj) => ({
-        id: obj.uuid,
-        confidence: obj.metadata?.certainty ?? (1 - (obj.metadata?.distance ?? 1)),
-      }));
-    } catch (error: any) {
-      console.error("Failed to run chunk attribution similarity:", error);
       throw error;
     }
   }
 
-  public async updateChunkReputation(chunkId: string, score: number, tier: string): Promise<void> {
+  public async getChunksByIds(ids: string[]): Promise<ParalegalRecord[]> {
+    if (!ids.length) return [];
+    try {
+      await this.init();
+      const results = await this.paralegalCollection.query.fetchObjects({
+        filters: this.paralegalCollection.filter.byId().containsAny(ids),
+      });
+      return results.objects.map(obj => ({
+        ...obj.properties,
+        id: obj.uuid
+      } as any));
+    } catch (error: any) {
+      console.error("Failed to fetch chunks by IDs:", error);
+      throw error;
+    }
+  }
+
+  public async updateChunkReputation(chunkId: string, score: number, tier: "HEALTHY" | "WATCH" | "DEGRADE" | "FLAG"): Promise<void> {
     try {
       await this.init();
       await this.paralegalCollection.data.update({
@@ -141,6 +178,37 @@ class ParalegalVectorDbClient {
     } catch (error: any) {
       console.error(`Failed to update chunk reputation for ${chunkId}:`, error);
       throw error;
+    }
+  }
+
+  public async updateChunkCorrections(chunkId: string, corrections: Correction[]): Promise<void> {
+    try {
+      await this.init();
+      await this.paralegalCollection.data.update({
+        id: chunkId,
+        properties: {
+          corrections: JSON.stringify(corrections),
+        },
+      });
+    } catch (error: any) {
+      console.error(`Failed to update chunk corrections for ${chunkId}:`, error);
+      throw error;
+    }
+  }
+
+  public async getChunkCorrections(chunkId: string): Promise<Correction[]> {
+    try {
+      await this.init();
+      const result = await this.paralegalCollection.query.fetchObjectById(chunkId);
+      if (!result || !result.properties.corrections) {
+        return [];
+      }
+
+      const correctionsData = result.properties.corrections;
+      return typeof correctionsData === "string" ? JSON.parse(correctionsData) : (correctionsData || []);
+    } catch (error: any) {
+      console.error(`Failed to fetch chunk corrections for ${chunkId}:`, error);
+      return [];
     }
   }
 }

@@ -11,50 +11,55 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
 
   try {
     const payload = JSON.parse(record.body);
-    const { feedbackId, responseId, chatId, feedbackType, bucket, createdAt } = payload;
+    const { feedbackId, responseId, bucket, createdAt, incorrectClaim } = payload;
 
     console.log(`Processing feedback ${feedbackId} for response ${responseId} in bucket ${bucket}`);
 
-    // 1. Skip Human bucket as requested in strategy 5.1 step 3 (and user clarification)
     if (bucket === "Human") {
       console.log(`Bucket is Human, skipping LLM attribution for ${feedbackId}`);
       return;
     }
 
-    // 2. Fetch the MessageRecord to get retrievedChunkIds and the actual response text
+    // 1. Fetch the MessageRecord to get retrievedChunkIds
     const messageRecord = await ChatService.getMessageByResponseId(responseId);
     
     if (!messageRecord) {
       throw new Error(`MessageRecord not found for responseId=${responseId}`);
     }
 
-    const { response: responseText, retrievedChunkIds = [] } = messageRecord;
+    const { retrievedChunkIds = [] } = messageRecord;
 
     if (retrievedChunkIds.length === 0) {
       console.log(`No retrievedChunkIds found for response ${responseId}. Marking feedback ${feedbackId} as unattributable.`);
       return;
     }
 
-    // 3. Run Cosine Similarity Attribution against Weaviate candidate chunks
-    console.log(`Running similarity for ${retrievedChunkIds.length} candidate chunks...`);
-    const attributedChunks = await paralegalVectorDbClient.findAttributedChunks(responseText, retrievedChunkIds);
+    // 2. Fetch the full text content for each of the 10 candidate chunks
+    console.log(`Fetching text for ${retrievedChunkIds.length} candidate chunks...`);
+    const chunks = await paralegalVectorDbClient.getChunksByIds(retrievedChunkIds);
     
-    console.log(`Found ${attributedChunks.length} chunks meeting the attribution threshold.`);
+    // 3. Use the FeedbackService (LLM) to pinpoint the culprit chunk
+    console.log(`Performing LLM-based attribution for claim: "${incorrectClaim}"`);
+    const attributionResult = await FeedbackService.pickCulpritChunk(
+      incorrectClaim,
+      chunks.map(c => ({ id: c.id!, text: c.text }))
+    );
 
-    if (attributedChunks.length > 0) {
-      const chunkIds = attributedChunks.map((c) => c.id);
-      const maxConfidence = Math.max(...attributedChunks.map((c) => c.confidence));
-
+    // 4. Update the feedback record if a culprit was found
+    if (attributionResult.culpritChunkId) {
+      console.log(`Atributed feedback ${feedbackId} to chunk ${attributionResult.culpritChunkId} with confidence ${attributionResult.confidence}`);
+      
       await FeedbackService.updateAttributionResults(
         responseId,
         createdAt,
-        chunkIds,
-        maxConfidence
+        [attributionResult.culpritChunkId],
+        attributionResult.confidence
       );
+    } else {
+      console.log(`No culprit chunk identified by LLM for feedback ${feedbackId}. Reason: ${attributionResult.reasoning}`);
     }
   } catch (error) {
     console.error(`Error processing record ${record.messageId}:`, error);
-    // Throwing the error ensures SQS will fail the message and retry or route it to DLQ
     throw error;
   }
 };

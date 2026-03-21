@@ -25,6 +25,8 @@ export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent)
       bucket,
       createdAt,
       status,
+      incorrectClaim,
+      correctValue,
       attributedChunkIds = [],
       attributionConfidence
     } = parsedRecord;
@@ -58,6 +60,8 @@ export const handler: DynamoDBStreamHandler = async (event: DynamoDBStreamEvent)
             chatId,
             feedbackType,
             bucket,
+            incorrectClaim,
+            correctValue,
             createdAt,
           }),
         })

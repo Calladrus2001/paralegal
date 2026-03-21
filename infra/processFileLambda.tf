@@ -16,6 +16,73 @@ resource "aws_iam_role" "lambda_execution_role" {
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
 }
 
+resource "aws_iam_role_policy_attachment" "lambda_basic_execution" {
+  role       = aws_iam_role.lambda_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+}
+
+data "aws_iam_policy_document" "lambda_permissions" {
+  statement {
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+      "dynamodb:GetItem",
+      "dynamodb:DeleteItem",
+      "dynamodb:Query",
+      "dynamodb:BatchWriteItem",
+      "dynamodb:BatchGetItem",
+      "dynamodb:DescribeTable"
+    ]
+    resources = [
+      aws_dynamodb_table.paralegal_feedbacks.arn,
+      "${aws_dynamodb_table.paralegal_feedbacks.arn}/index/*",
+      aws_dynamodb_table.paralegal_messages.arn,
+      "${aws_dynamodb_table.paralegal_messages.arn}/index/*",
+      aws_dynamodb_table.paralegal_chats.arn,
+      "${aws_dynamodb_table.paralegal_chats.arn}/index/*",
+      aws_dynamodb_table.paralegal_chunk_stats.arn,
+      aws_dynamodb_table.paralegal_chunk_attributions.arn
+    ]
+  }
+
+  statement {
+    actions = [
+      "dynamodb:DescribeStream",
+      "dynamodb:GetRecords",
+      "dynamodb:GetShardIterator",
+      "dynamodb:ListStreams"
+    ]
+    resources = [
+      aws_dynamodb_table.paralegal_feedbacks.stream_arn
+    ]
+  }
+
+  statement {
+    actions = [
+      "sqs:ReceiveMessage",
+      "sqs:DeleteMessage",
+      "sqs:GetQueueAttributes",
+      "sqs:SendMessage"
+    ]
+    resources = [
+      aws_sqs_queue.paralegal_queue.arn,
+      aws_sqs_queue.paralegal_attribution_queue.arn,
+      aws_sqs_queue.paralegal_scoring_queue.arn
+    ]
+  }
+
+  statement {
+    actions   = ["s3:GetObject"]
+    resources = ["${aws_s3_bucket.paralegal_bucket.arn}/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_custom_policy" {
+  name   = "${local.prefix}_lambda_custom_policy"
+  role   = aws_iam_role.lambda_execution_role.id
+  policy = data.aws_iam_policy_document.lambda_permissions.json
+}
+
 data "archive_file" "process_file_lambda_code" {
   type        = "zip"
   source_dir  = "${path.module}/../dist/processFileLambda"

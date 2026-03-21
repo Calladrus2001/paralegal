@@ -54,3 +54,12 @@ export interface FeedbackRecord extends FeedbackRequest {
   attributedChunkIds?: string[];
   attributionConfidence?: number;
 }
+
+export const AttributionResultSchema = z.object({
+  culpritChunkId: z.string().nullable().describe("The UUID of the chunk most likely responsible for the incorrect claim"),
+  evidenceQuote: z.string().describe("The specific sentence or phrase from the chunk that contains the error. If not found, use an empty string."),
+  reasoning: z.string().describe("Brief explanation of why this chunk was selected"),
+  confidence: z.number().min(0).max(1).describe("The LLM's confidence in this attribution (0-1)")
+});
+
+export type AttributionResult = z.infer<typeof AttributionResultSchema>;

@@ -25,13 +25,16 @@ resource "aws_lambda_function" "attribution_lambda" {
 
   environment {
     variables = {
-      LOG_LEVEL                 = "info"
-      WEAVIATE_HOST             = local.use_localstack ? "weaviate" : "localhost"
-      DYNAMODB_CHATS_TABLE      = aws_dynamodb_table.paralegal_chats.name
-      DYNAMODB_MESSAGES_TABLE   = aws_dynamodb_table.paralegal_messages.name
-      DYNAMODB_FEEDBACKS_TABLE  = aws_dynamodb_table.paralegal_feedbacks.name
-      SQS_ATTRIBUTION_QUEUE_URL = aws_sqs_queue.paralegal_attribution_queue.url
-      SQS_SCORING_QUEUE_URL     = aws_sqs_queue.paralegal_scoring_queue.url
+      LOG_LEVEL                         = "info"
+      WEAVIATE_HOST                     = local.use_localstack ? "weaviate" : "localhost"
+      DYNAMODB_CHATS_TABLE              = aws_dynamodb_table.paralegal_chats.name
+      DYNAMODB_MESSAGES_TABLE           = aws_dynamodb_table.paralegal_messages.name
+      DYNAMODB_FEEDBACKS_TABLE          = aws_dynamodb_table.paralegal_feedbacks.name
+      DYNAMODB_CHUNK_ATTRIBUTIONS_TABLE = aws_dynamodb_table.paralegal_chunk_attributions.name
+      SQS_ATTRIBUTION_QUEUE_URL         = aws_sqs_queue.paralegal_attribution_queue.url
+      SQS_SCORING_QUEUE_URL             = aws_sqs_queue.paralegal_scoring_queue.url
+      REDIS_HOST                        = local.use_localstack ? "redis" : "localhost"
+      OPENAI_API_KEY                    = var.openai_api_key
     }
   }
 }
