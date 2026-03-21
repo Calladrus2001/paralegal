@@ -25,6 +25,8 @@ class ParalegalVectorDbClient {
           { name: "chunk_index", dataType: "int" },
           { name: "userId", dataType: "text" },
           { name: "fileId", dataType: "text" },
+          { name: "feedback_score", dataType: "number" },
+          { name: "feedback_tier", dataType: "text" },
         ],
       });
     }
@@ -122,6 +124,22 @@ class ParalegalVectorDbClient {
       }));
     } catch (error: any) {
       console.error("Failed to run chunk attribution similarity:", error);
+      throw error;
+    }
+  }
+
+  public async updateChunkReputation(chunkId: string, score: number, tier: string): Promise<void> {
+    try {
+      await this.init();
+      await this.paralegalCollection.data.update({
+        id: chunkId,
+        properties: {
+          feedback_score: score,
+          feedback_tier: tier,
+        },
+      });
+    } catch (error: any) {
+      console.error(`Failed to update chunk reputation for ${chunkId}:`, error);
       throw error;
     }
   }

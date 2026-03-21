@@ -37,6 +37,7 @@ export const dynamo = DynamoDBDocumentClient.from(dynamoClient, {
 export const CHATS_TABLE = process.env.DYNAMODB_CHATS_TABLE!;
 export const MESSAGES_TABLE = process.env.DYNAMODB_MESSAGES_TABLE!;
 export const FEEDBACKS_TABLE = process.env.DYNAMODB_FEEDBACKS_TABLE!;
+export const STATS_TABLE = process.env.DYNAMODB_CHUNK_STATS_TABLE!;
 
 export const sqsClient = new SQSClient(awsConfig);
 export const ATTRIBUTION_QUEUE_URL = process.env.SQS_ATTRIBUTION_QUEUE_URL!;

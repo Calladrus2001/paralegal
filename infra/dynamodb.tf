@@ -90,3 +90,19 @@ resource "aws_dynamodb_table" "paralegal_feedbacks" {
     projection_type = "ALL"
   }
 }
+
+# ───────────────────────────────────────────
+# Chunk Stats table
+# PK: chunkId  SK: literal "STATS"
+# Access: fetch/update reputation score and tier
+# ───────────────────────────────────────────
+resource "aws_dynamodb_table" "paralegal_chunk_stats" {
+  name         = "${local.prefix}-paralegal-chunk-stats"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "chunkId"
+
+  attribute {
+    name = "chunkId"
+    type = "S"
+  }
+}

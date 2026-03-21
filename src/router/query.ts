@@ -8,6 +8,7 @@ import { ChatService } from "../services/chat";
 import pRetry from "p-retry";
 import { nanoid } from "nanoid";
 import { buildAgentMessages } from "../tools";
+import { ReputationService } from "../services/reputation";
 
 const router = Router();
 
@@ -61,6 +62,9 @@ function persistQueryRecord(params: {
           createdAt: new Date().toISOString(),
         }),
       { retries: 3 }
+    ),
+    ...(retrievedChunkIds || []).map((chunkId: string) => 
+      pRetry(() => ReputationService.incrementRetrievalCount(chunkId), { retries: 2 })
     ),
   ]).then((results) => {
     const failures = results.filter((r) => r.status === "rejected");
