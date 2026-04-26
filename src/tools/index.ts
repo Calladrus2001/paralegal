@@ -30,16 +30,13 @@ export const buildAgentMessages = async (chatId: string, userId: string, fileId:
   }
 
   messages.push({
-    role: "user",
-    content: `
-      [Session Metadata]
-      UserId: ${userId}
-      FileId: ${fileId}
-      ChatId: ${chatId}
+    role: "system",
+    content: `Current session context — userId: "${userId}", fileId: "${fileId}". Use these values when calling tools.`,
+  });
 
-      [User Query]
-      ${query}
-    `.trim(),
+  messages.push({
+    role: "user",
+    content: query,
   });
 
   return messages;

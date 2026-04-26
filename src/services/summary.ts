@@ -44,7 +44,6 @@ export class ChatSummaryService {
 
     const summaryKey = this.getSummaryKey(chatId);
     const lastTurnKey = this.getLastTurnKey(chatId);
-    const ttl = parseInt(process.env.REDIS_SESSION_TTL_SECONDS || "86400");
 
     const { summary, lastTurn } = await this.getContext(chatId);
 

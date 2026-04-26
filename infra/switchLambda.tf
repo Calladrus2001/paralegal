@@ -39,7 +39,7 @@ resource "aws_lambda_event_source_mapping" "dynamodb_to_switch" {
   event_source_arn  = aws_dynamodb_table.paralegal_feedbacks.stream_arn
   function_name     = aws_lambda_function.switch_lambda.arn
   starting_position = "LATEST"
-  batch_size        = 10
+  batch_size        = 1
 
   # Bonus optimization: Only invoke the lambda if the event is an INSERT or MODIFY,
   # and only if there's a status field present in the new image.

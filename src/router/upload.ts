@@ -19,7 +19,10 @@ router.post("/", validateBodyMiddleware(presignMetadataSchema), async (req, res)
   const command = new PutObjectCommand({
     Bucket: bucket,
     Key: key,
-    Metadata: metadata,
+    Metadata: {
+      userId: metadata.userId,
+      caseId: metadata.caseId,
+    },
   });
   try {
     const url = await getSignedUrl(s3, command, { expiresIn: 300 }); // 5 minutes

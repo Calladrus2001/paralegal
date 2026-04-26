@@ -4,7 +4,7 @@ import { ChatService } from "../../services/chat";
 import { FeedbackService } from "../../services/feedback";
 
 export const handler: SQSHandler = async (event: SQSEvent) => {
-  console.log(`Received ${event.Records.length} SQS records for attribution.`);
+  console.log(`Received SQS event with ${event.Records.length} records.`);
 
   const record = event.Records[0];
   if (!record) return;
@@ -30,11 +30,12 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
     const { retrievedChunkIds = [] } = messageRecord;
 
     if (retrievedChunkIds.length === 0) {
-      console.log(`No retrievedChunkIds found for response ${responseId}. Marking feedback ${feedbackId} as unattributable.`);
+      console.log(`No retrievedChunkIds found for response ${responseId}. Marking feedback ${feedbackId} as processed (unattributable).`);
+      await FeedbackService.updateAttributionResults(responseId, createdAt, [], 0);
       return;
     }
 
-    // 2. Fetch the full text content for each of the 10 candidate chunks
+    // 2. Fetch the full text content for each of the candidate chunks
     console.log(`Fetching text for ${retrievedChunkIds.length} candidate chunks...`);
     const chunks = await paralegalVectorDbClient.getChunksByIds(retrievedChunkIds);
     
@@ -45,9 +46,9 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
       chunks.map(c => ({ id: c.id!, text: c.text }))
     );
 
-    // 4. Update the feedback record if a culprit was found
+    // 4. Update the feedback record
     if (attributionResult.culpritChunkId) {
-      console.log(`Atributed feedback ${feedbackId} to chunk ${attributionResult.culpritChunkId} with confidence ${attributionResult.confidence}`);
+      console.log(`Attributed feedback ${feedbackId} to chunk ${attributionResult.culpritChunkId} with confidence ${attributionResult.confidence}`);
       
       await FeedbackService.updateAttributionResults(
         responseId,
@@ -57,6 +58,7 @@ export const handler: SQSHandler = async (event: SQSEvent) => {
       );
     } else {
       console.log(`No culprit chunk identified by LLM for feedback ${feedbackId}. Reason: ${attributionResult.reasoning}`);
+      await FeedbackService.updateAttributionResults(responseId, createdAt, [], 0);
     }
   } catch (error) {
     console.error(`Error processing record ${record.messageId}:`, error);

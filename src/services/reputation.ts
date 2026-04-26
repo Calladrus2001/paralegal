@@ -21,8 +21,8 @@ export class ReputationService {
   }
 
   /**
-   * INCR the penalty score in Redis (Numerator)zz
-   * Called by Scoring Lambda (Phase 4, Step 8)z
+   * INCR the penalty score in Redis (Numerator)
+   * Called by Scoring Lambda (Phase 4, Step 8)
    */
   static async incrementPenalty(chunkId: string, penalty: number): Promise<void> {
     const key = `${this.PENALTY_KEY_PREFIX}${chunkId}`;
@@ -33,16 +33,20 @@ export class ReputationService {
    * Get all dirty chunk IDs that have pending increments in Redis
    */
   static async getDirtyChunkIds(): Promise<string[]> {
-    const retrievalKeys = await redis.keys(`${this.RETRIEVAL_KEY_PREFIX}*`);
-    const penaltyKeys = await redis.keys(`${this.PENALTY_KEY_PREFIX}*`);
-    const allKeys = [...retrievalKeys, ...penaltyKeys];
-    
-    // Extract unique chunkIds from keys
     const chunkIds = new Set<string>();
-    for (const key of allKeys) {
-      const id = key.split(":")[1];
-      if (id) chunkIds.add(id);
+
+    const stream = redis.scanStream({
+      match: "chunk_*:*",
+      count: 100,
+    });
+
+    for await (const keys of stream) {
+      for (const key of keys) {
+        const id = key.split(":")[1];
+        if (id) chunkIds.add(id);
+      }
     }
+
     return Array.from(chunkIds);
   }
 
@@ -54,8 +58,11 @@ export class ReputationService {
     const retrievalKey = `${this.RETRIEVAL_KEY_PREFIX}${chunkId}`;
     const penaltyKey = `${this.PENALTY_KEY_PREFIX}${chunkId}`;
 
-    // 1. Atomic fetch and reset counts from Redis
-    const [retrievalsStr, penaltiesStr] = await redis.mget(retrievalKey, penaltyKey);
+    // 1. Atomic fetch-and-delete from Redis (prevents race with concurrent INCR/INCRBYFLOAT)
+    const [retrievalsStr, penaltiesStr] = await Promise.all([
+      redis.getdel(retrievalKey),
+      redis.getdel(penaltyKey),
+    ]);
     const newRetrievals = parseInt(retrievalsStr || "0", 10);
     const newPenalties = parseFloat(penaltiesStr || "0");
 
@@ -119,7 +126,6 @@ export class ReputationService {
       await CorrectionService.syncChunkCorrections(chunkId);
     }
 
-    // 7. Success! Now safe to clear Redis counters
-    await redis.del(retrievalKey, penaltyKey);
+    // Redis counters already cleared atomically via GETDEL in step 1
   }
 }

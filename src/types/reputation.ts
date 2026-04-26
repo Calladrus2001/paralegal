@@ -5,5 +5,5 @@ export interface ChunkStats {
   weightedScore: number;
   tier: "HEALTHY" | "WATCH" | "DEGRADE" | "FLAG";
   lastEvaluatedAt: string;
-  type?: string; // Optinal for SK if needed, though we simplified to PK only
+  type?: string; // Optional for SK if needed, though we simplified to PK only
 }

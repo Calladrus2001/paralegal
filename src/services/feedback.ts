@@ -1,5 +1,6 @@
-import { PutCommand, UpdateCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo, FEEDBACKS_TABLE, CHUNK_ATTRIBUTIONS_TABLE } from "../clients/aws";
+import { batchWriteItems } from "../common/dynamodb";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { summarizerModel } from "../clients/openai";
@@ -70,15 +71,9 @@ export class FeedbackService {
       },
     }));
 
-    const batchWriteCommand = new BatchWriteCommand({
-      RequestItems: {
-        [CHUNK_ATTRIBUTIONS_TABLE]: mappingRequests,
-      },
-    });
-
     await Promise.all([
       dynamo.send(command),
-      mappingRequests.length > 0 ? dynamo.send(batchWriteCommand) : Promise.resolve(),
+      batchWriteItems(CHUNK_ATTRIBUTIONS_TABLE, mappingRequests),
     ]);
   }
 

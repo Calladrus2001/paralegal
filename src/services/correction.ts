@@ -1,5 +1,6 @@
-import { QueryCommand, BatchGetCommand, BatchWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo, FEEDBACKS_TABLE, CHUNK_ATTRIBUTIONS_TABLE } from "../clients/aws";
+import { batchGetItems, batchWriteItems } from "../common/dynamodb";
 import paralegalVectorDbClient from "../clients/weaviate";
 import type { Correction } from "../types/weaviate";
 import { nanoid } from "nanoid";
@@ -81,20 +82,14 @@ Classify the new correction as exactly one of:
         return; 
       }
 
-      // 2. Fetch the actual Feedback records
-      const batchGetCommand = new BatchGetCommand({
-        RequestItems: {
-          [FEEDBACKS_TABLE]: {
-            Keys: mappings.map((m) => ({
-              responseId: m.responseId,
-              createdAt: m.createdAt,
-            })),
-          },
-        },
-      });
-
-      const feedbacksResponse = await dynamo.send(batchGetCommand);
-      const rawFeedbacks = feedbacksResponse.Responses?.[FEEDBACKS_TABLE] || [];
+      // 2. Fetch the actual Feedback records (auto-chunked, with retry for UnprocessedKeys)
+      const rawFeedbacks = await batchGetItems(
+        FEEDBACKS_TABLE,
+        mappings.map((m) => ({
+          responseId: m.responseId,
+          createdAt: m.createdAt,
+        }))
+      );
 
       // Only factual errors are used for patching
       const factualFeedbacks = rawFeedbacks.filter(
@@ -179,17 +174,7 @@ Classify the new correction as exactly one of:
         },
       }));
 
-      // DynamoDB BatchWriteItem is limited to 25 items per request 
-      for (let i = 0; i < deleteRequests.length; i += 25) {
-        const batch = deleteRequests.slice(i, i + 25);
-        await dynamo.send(
-          new BatchWriteCommand({
-            RequestItems: {
-              [CHUNK_ATTRIBUTIONS_TABLE]: batch,
-            },
-          })
-        );
-      }
+      await batchWriteItems(CHUNK_ATTRIBUTIONS_TABLE, deleteRequests);
       console.log(`[CorrectionSync] Dequeued ${mappings.length} mappings for chunk ${chunkId}.`);
 
     } catch (error) {

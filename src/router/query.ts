@@ -34,7 +34,7 @@ function persistQueryRecord(params: {
         if (Array.isArray(chunks) && chunks.length > 0) {
           return {
             retrievedChunkIds: chunks.map((c: any) => c.id).filter(Boolean),
-            retrievedScores: chunks.map((c: any) => c.score).filter(Boolean),
+            retrievedScores: chunks.map((c: any) => c.score).filter((s: any) => s != null),
           };
         }
       } catch (e) {
@@ -84,11 +84,10 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
     const responseId = nanoid();
     const assistantResponse = response.messages[response.messages.length - 1]?.content as string;
 
-    res.json(assistantResponse);
-
     res.on("finish", () =>
       persistQueryRecord({ chatId, userId, query, responseId, assistantResponse, agentMessages: response.messages })
     );
+    res.json(assistantResponse);
   } catch (err: any) {
     console.error("Agent error:", err);
     res.status(500).json({ error: err.message });
