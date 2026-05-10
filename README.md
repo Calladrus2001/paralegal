@@ -97,6 +97,8 @@ The Express server will be listening at `http://localhost:3000`.
 
 ## 📂 Architecture Detail
 
+![Architecture Diagram](architecture.png)
+
 ### **Infrastructure Components**
 | Component | Role |
 | :--- | :--- |
