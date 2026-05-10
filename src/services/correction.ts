@@ -6,6 +6,7 @@ import type { Correction } from "../types/weaviate";
 import { nanoid } from "nanoid";
 import { AuditorSchema, type AuditorResult } from "../types/correction";
 import { summarizerModel } from "../clients/openai";
+import { buildCorrectionAuditorPrompt } from "../prompts/correction";
 
 export class CorrectionService {
   /**
@@ -33,20 +34,7 @@ export class CorrectionService {
       )
       .join("\n");
 
-    const prompt = `
-You are auditing corrections on a knowledge base chunk.
-Existing corrections for this chunk:
-${existingCorrectionsText}
-
-New correction submitted by a user:
-incorrect_claim: "${incorrectClaim}"
-correct_value: "${correctValue}"
-
-Classify the new correction as exactly one of:
-- NEW: addresses a claim not covered by any existing correction.
-- VOTE: agrees with an existing correction (return the claim_id it matches).
-- CONTRADICTION: conflicts with an existing correction (return the claim_id it conflicts with).
-    `.trim();
+    const prompt = buildCorrectionAuditorPrompt(existingCorrectionsText, incorrectClaim, correctValue);
 
     try {
       const response = await structuredModel.invoke(prompt) as AuditorResult;
@@ -164,7 +152,7 @@ Classify the new correction as exactly one of:
         }
       }
 
-      // 7. Dequeue (Delete) ALL processed mappings (Factual and Non-Factual)
+      // 6. Dequeue (Delete) ALL processed mappings (Factual and Non-Factual)
       const deleteRequests = mappings.map((m) => ({
         DeleteRequest: {
           Key: {

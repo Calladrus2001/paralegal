@@ -2,7 +2,7 @@ import { Router } from "express";
 import { validateBodyMiddleware } from "../middleware/validateBodyMiddleware";
 import { ChatRequestSchema } from "../types/query";
 import type { ChatRequest } from "../types/query";
-import { pdfAgent } from "../clients/openai";
+import { createPdfAgent } from "../clients/openai";
 import { ChatSummaryService } from "../services/summary";
 import { ChatService } from "../services/chat";
 import pRetry from "p-retry";
@@ -63,7 +63,7 @@ function persistQueryRecord(params: {
         }),
       { retries: 3 }
     ),
-    ...(retrievedChunkIds || []).map((chunkId: string) => 
+    ...(retrievedChunkIds || []).map((chunkId: string) =>
       pRetry(() => ReputationService.incrementRetrievalCount(chunkId), { retries: 2 })
     ),
   ]).then((results) => {
@@ -78,8 +78,9 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
   try {
     const { userId, fileId, chatId, query } = req.body as ChatRequest;
 
-    const messages = await buildAgentMessages(chatId, userId, fileId, query);
-    const response = await pdfAgent.invoke({ messages });
+    const messages = await buildAgentMessages(chatId, query);
+    const agent = createPdfAgent(userId, fileId);
+    const response = await agent.invoke({ messages });
 
     const responseId = nanoid();
     const assistantResponse = response.messages[response.messages.length - 1]?.content as string;
@@ -87,7 +88,7 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
     res.on("finish", () =>
       persistQueryRecord({ chatId, userId, query, responseId, assistantResponse, agentMessages: response.messages })
     );
-    res.json(assistantResponse);
+    res.json({ responseId, response: assistantResponse });
   } catch (err: any) {
     console.error("Agent error:", err);
     res.status(500).json({ error: err.message });

@@ -1,5 +1,6 @@
 import { redis } from "../clients/redis";
 import { summarizerModel } from "../clients/openai";
+import { SUMMARY_INSTRUCTIONS, buildSummaryData } from "../prompts/summary";
 
 export interface Turn {
   user: string;
@@ -47,24 +48,10 @@ export class ChatSummaryService {
 
     const { summary, lastTurn } = await this.getContext(chatId);
 
-    const summaryInstructions = `
-      Your task is to maintain a concise, factual case summary for a Legal Q&A assistant.
-      - Format: Use bullet points.
-      - Tone: Professional and objective.
-      - Length: Strictly under 200 words.
-      - Update: Integrate new facts from the provided turn into the existing summary.
-    `;
-
-    const summaryData = `
-      Existing Summary: ${summary || "None"}
-      Previous Turn: ${lastTurn ? `User: ${lastTurn.user}\nAI: ${lastTurn.assistant}` : "None"}
-      New Interaction:
-      User Question: ${query}
-      AI Response: ${assistantResponse}
-    `;
+    const summaryData = buildSummaryData(summary, lastTurn, query, assistantResponse);
 
     const summaryResponse = await summarizerModel.invoke([
-      { role: "system", content: summaryInstructions },
+      { role: "system", content: SUMMARY_INSTRUCTIONS },
       { role: "user", content: summaryData },
     ]);
     const newSummary = summaryResponse.content;

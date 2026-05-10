@@ -2,10 +2,10 @@ import { PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo, FEEDBACKS_TABLE, CHUNK_ATTRIBUTIONS_TABLE } from "../clients/aws";
 import { batchWriteItems } from "../common/dynamodb";
 import { nanoid } from "nanoid";
-import { z } from "zod";
 import { summarizerModel } from "../clients/openai";
 import type { FeedbackRequest, FeedbackRecord, AttributionResult } from "../types/feedback";
 import { AttributionResultSchema } from "../types/feedback";
+import { buildAttributionPrompt } from "../prompts/feedback";
 
 export class FeedbackService {
   /**
@@ -96,33 +96,14 @@ export class FeedbackService {
     const structuredModel = summarizerModel.withStructuredOutput(AttributionResultSchema);
 
     const chunksText = candidateChunks
-      .map((c, i) => `[ID: ${c.id}] Chunk Content:\n${c.text}\n---`)
+      .map((c) => `[ID: ${c.id}] Chunk Content:\n${c.text}\n---`)
       .join("\n\n");
 
-    const prompt = `
-You are an expert legal auditor. A user has provided feedback about an AI-generated response.
-Your task is to identify which of the following candidate chunks is the primary source or the most relevant context for this feedback.
-
-Feedback Detail/Claim:
-"${incorrectClaim}"
-
-Candidate Chunks:
-${chunksText}
-
-Instructions:
-1. Review each chunk carefully.
-2. For each chunk, look for the specific sentences, figures, or context that most directly support or relate to the "Feedback Detail/Claim".
-3. **Evidence-First Approach**: Identify the EXACT quote from the chunk that is most relevant to the feedback.
-4. Pick the chunk that provides the most complete semantic match for the feedback. 
-5. If the feedback is completely unrelated to any of the chunks, set culpritChunkId to null.
-6. Provide the UUID of the most likely culprit, your reasoning, and the extracted quote.
-
-Provide your result as a JSON object matching the requested schema.
-    `.trim();
+    const prompt = buildAttributionPrompt(incorrectClaim, chunksText);
 
     try {
       const result = await structuredModel.invoke(prompt) as AttributionResult;
-      console.log(`[FeedbackService] Culprit identified: ${result.culpritChunkId} | Confidence: ${result.confidence} | Quote: "${result.evidenceQuote}" | Reason: ${result.reasoning}`);
+      console.log(`[FeedbackService] Culprit identified: ${result.culpritChunkId} | Confidence: ${result.confidence}`);
       return result;
     } catch (error) {
       console.error("[FeedbackService] LLM attribution failed:", error);

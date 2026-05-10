@@ -1,13 +1,17 @@
 import { connectToLocal, Filters, configure, type WeaviateClient, type Collection } from "weaviate-client";
 import type { SearchQuery } from "../types/query";
 import type { ParalegalRecord, Correction } from "../types/weaviate";
+import type { ReputationTier } from "../types/reputation";
 
 class ParalegalVectorDbClient {
   private client?: WeaviateClient;
   private paralegalCollection!: Collection<ParalegalRecord>;
+  private initPromise: Promise<void> | null = null;
 
   private async init(): Promise<void> {
-    if (this.client) return;
+    if (this.initPromise) return this.initPromise;
+
+    this.initPromise = (async () => {
 
     this.client = await connectToLocal({
       host: process.env.WEAVIATE_HOST || "localhost",
@@ -41,12 +45,15 @@ class ParalegalVectorDbClient {
     }
 
     this.paralegalCollection = this.client.collections.get<ParalegalRecord>("Paralegal");
+    })();
+
+    return this.initPromise;
   }
 
-  public async addChunksToParalegal(docs: any[], userId: string, fileId: string): Promise<void> {
+  public async addChunksToParalegal(docs: { pageContent: string }[], userId: string, fileId: string): Promise<void> {
     try {
       await this.init();
-      const objects = docs.map((doc: any, i: number) => ({
+      const objects = docs.map((doc, i) => ({
         properties: {
           text: doc.pageContent,
           chunk_index: i,
@@ -63,9 +70,9 @@ class ParalegalVectorDbClient {
           throw new Error(`Failed to insert batch ${i / BATCH_SIZE}: ${JSON.stringify(result.errors)}`);
         }
       }
-    } catch (error: any) {
-      console.error(error);
-      throw new Error(`Failed to add chunks to paralegal: ${userId}/${fileId}`);
+    } catch (error) {
+      console.error(`[Weaviate] Failed to add chunks: ${userId}/${fileId}`, error);
+      throw error;
     }
   }
 
@@ -78,8 +85,8 @@ class ParalegalVectorDbClient {
           this.paralegalCollection.filter.byProperty("fileId").equal(fileId)
         )
       );
-    } catch (error: any) {
-      console.error(error);
+    } catch (error) {
+      console.error(`[Weaviate] Failed to delete file chunks: ${userId}/${fileId}`, error);
       throw error;
     }
   }
@@ -150,8 +157,8 @@ class ParalegalVectorDbClient {
         .sort((a, b) => b.score - a.score)
         .slice(0, TARGET_LIMIT);
 
-    } catch (error: any) {
-      console.error(error);
+    } catch (error) {
+      console.error("[Weaviate] Search failed:", error);
       throw error;
     }
   }
@@ -166,14 +173,14 @@ class ParalegalVectorDbClient {
       return results.objects.map(obj => ({
         ...obj.properties,
         id: obj.uuid
-      } as any));
-    } catch (error: any) {
-      console.error("Failed to fetch chunks by IDs:", error);
+      } as ParalegalRecord));
+    } catch (error) {
+      console.error("[Weaviate] Failed to fetch chunks by IDs:", error);
       throw error;
     }
   }
 
-  public async updateChunkReputation(chunkId: string, score: number, tier: "HEALTHY" | "WATCH" | "DEGRADE" | "FLAG"): Promise<void> {
+  public async updateChunkReputation(chunkId: string, score: number, tier: ReputationTier): Promise<void> {
     try {
       await this.init();
       await this.paralegalCollection.data.update({
@@ -183,8 +190,8 @@ class ParalegalVectorDbClient {
           feedback_tier: tier,
         },
       });
-    } catch (error: any) {
-      console.error(`Failed to update chunk reputation for ${chunkId}:`, error);
+    } catch (error) {
+      console.error(`[Weaviate] Failed to update chunk reputation for ${chunkId}:`, error);
       throw error;
     }
   }
@@ -198,8 +205,8 @@ class ParalegalVectorDbClient {
           corrections: JSON.stringify(corrections),
         },
       });
-    } catch (error: any) {
-      console.error(`Failed to update chunk corrections for ${chunkId}:`, error);
+    } catch (error) {
+      console.error(`[Weaviate] Failed to update chunk corrections for ${chunkId}:`, error);
       throw error;
     }
   }
@@ -214,8 +221,8 @@ class ParalegalVectorDbClient {
 
       const correctionsData = result.properties.corrections;
       return typeof correctionsData === "string" ? JSON.parse(correctionsData) : (correctionsData || []);
-    } catch (error: any) {
-      console.error(`Failed to fetch chunk corrections for ${chunkId}:`, error);
+    } catch (error) {
+      console.error(`[Weaviate] Failed to fetch chunk corrections for ${chunkId}:`, error);
       return [];
     }
   }

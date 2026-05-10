@@ -1,6 +1,7 @@
 import { createAgent } from "langchain";
 import { ChatOpenAI } from "@langchain/openai";
-import { fetchChunksTool } from "../tools";
+import { createFetchChunksTool } from "../tools";
+import { PDF_AGENT_SYSTEM_PROMPT } from "../prompts/query";
 
 export const CHAT_MODEL = "gpt-4o";
 
@@ -16,18 +17,14 @@ export const summarizerModel = new ChatOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-export const pdfAgent = createAgent({
-  model,
-  tools: [fetchChunksTool],
-  systemPrompt: `
-    You are an AI agent for a PDF Q&A system. 
-    Determine user intent and act accordingly:
-
-    1. Use fetchRelevantChunks to retrieve relevant information before answering any questions.
-    2. Synthesize the retrieved chunks into a clear, precise answer.
-
-    Be precise and concise. Always stay in your role.
-    Do not entertain anything other than PDF-related operations.
-    Never expose internal tool calls.
-  `,
-});
+/**
+ * Creates a PDF agent with userId/fileId-bound tools.
+ * Called per-request so the tool closure captures the correct context.
+ */
+export function createPdfAgent(userId: string, fileId: string) {
+  return createAgent({
+    model,
+    tools: [createFetchChunksTool(userId, fileId)],
+    systemPrompt: PDF_AGENT_SYSTEM_PROMPT,
+  });
+}

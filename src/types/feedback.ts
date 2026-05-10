@@ -12,6 +12,18 @@ export const FeedbackTypeEnum = z.enum([
 
 export const FeedbackBucketEnum = z.enum(["LLM", "Human"]);
 
+export type FeedbackType = z.infer<typeof FeedbackTypeEnum>;
+
+export const SEVERITY_WEIGHTS: Record<FeedbackType, number> = {
+  "Fabricated information": 1.0,
+  "Factually incorrect": 0.9,
+  "Irrelevant": 0.6,
+  "Insufficient detail": 0.4,
+  "Partial answer only": 0.3,
+  "Generic / boilerplate": 0.2,
+  "Misinterpreted intent": 0.2,
+};
+
 export const FeedbackRequestSchema = z.object({
   responseId: z.string().describe("UUID of the response being evaluated"),
   chatId: z.string().describe("UUID of the chat this response belongs to"),

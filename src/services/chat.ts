@@ -64,16 +64,7 @@ export class ChatService {
   static async addMessage(message: MessageRecord): Promise<void> {
     const command = new PutCommand({
       TableName: MESSAGES_TABLE,
-      Item: {
-        chatId: message.chatId,
-        createdAt: message.createdAt,
-        responseId: message.responseId,
-        userId: message.userId,
-        query: message.query,
-        response: message.response,
-        retrievedChunkIds: message.retrievedChunkIds,
-        retrievedScores: message.retrievedScores,
-      },
+      Item: message,
     });
 
     await dynamo.send(command);

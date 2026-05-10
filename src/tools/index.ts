@@ -1,38 +1,42 @@
 import { tool } from "langchain";
+import { z } from "zod";
 import { SearchQuerySchema } from "../types/query";
 import paralegalVectorDbClient from "../clients/weaviate";
 import { ChatSummaryService } from "../services/summary";
+import { buildCaseSummaryContext } from "../prompts/query";
 
-export const fetchChunksTool = tool(
-  async ({ query, userId, fileId }) => {
-    const result = await paralegalVectorDbClient.search({ query, userId, fileId });
-    return JSON.stringify(result);
-  },
-  {
-    name: "fetchRelevantChunks",
-    description: "Retrieve relevant chunks from the vector DB based on a query",
-    schema: SearchQuerySchema,
-  }
-);
+/**
+ * Creates a fetchRelevantChunks tool with userId and fileId pre-bound.
+ * This avoids relying on the LLM to correctly pass these values from a system message.
+ */
+export function createFetchChunksTool(userId: string, fileId: string) {
+  return tool(
+    async ({ query }) => {
+      const result = await paralegalVectorDbClient.search({ query, userId, fileId });
+      return JSON.stringify(result);
+    },
+    {
+      name: "fetchRelevantChunks",
+      description: "Retrieve relevant chunks from the vector DB based on a query",
+      schema: z.object({
+        query: z.string().min(10).describe("The query to search for in the knowledge base"),
+      }),
+    }
+  );
+}
 
-
-export const buildAgentMessages = async (chatId: string, userId: string, fileId: string, query: string) => {
+export const buildAgentMessages = async (chatId: string, query: string) => {
   const { summary, lastTurn } = await ChatSummaryService.getContext(chatId);
-  const messages: any[] = [];
+  const messages: Array<{ role: string; content: string }> = [];
 
   if (summary) {
-    messages.push({ role: "system", content: `CONCISED CONTEXT OF LEGAL CASE:\n${summary}` });
+    messages.push({ role: "system", content: buildCaseSummaryContext(summary) });
   }
 
   if (lastTurn) {
     messages.push({ role: "user", content: lastTurn.user });
     messages.push({ role: "assistant", content: lastTurn.assistant });
   }
-
-  messages.push({
-    role: "system",
-    content: `Current session context — userId: "${userId}", fileId: "${fileId}". Use these values when calling tools.`,
-  });
 
   messages.push({
     role: "user",

@@ -1,3 +1,5 @@
+import type { ReputationTier } from "./reputation";
+
 export interface ParalegalRecord {
   id?: string;
   [key: string]: any;
@@ -6,7 +8,7 @@ export interface ParalegalRecord {
   userId: string;
   fileId: string;
   feedback_score?: number;
-  feedback_tier?: "HEALTHY" | "WATCH" | "DEGRADE" | "FLAG";
+  feedback_tier?: ReputationTier;
   corrections?: string;
 }
 
