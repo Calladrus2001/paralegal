@@ -30,10 +30,11 @@ resource "aws_lambda_function" "scoring_lambda" {
 
   environment {
     variables = {
-      LOG_LEVEL                = "info"
-      REDIS_HOST               = local.use_localstack ? "redis" : "localhost"
-      DYNAMODB_FEEDBACKS_TABLE = aws_dynamodb_table.paralegal_feedbacks.name
+      LOG_LEVEL                  = "info"
+      REDIS_HOST                 = local.use_localstack ? "redis" : "localhost"
+      DYNAMODB_FEEDBACKS_TABLE   = aws_dynamodb_table.paralegal_feedbacks.name
       DYNAMODB_CHUNK_STATS_TABLE = aws_dynamodb_table.paralegal_chunk_stats.name
+      OPENAI_API_KEY             = var.openai_api_key
     }
   }
 }
@@ -81,6 +82,7 @@ resource "aws_lambda_function" "flush_lambda" {
       REDIS_HOST                 = local.use_localstack ? "redis" : "localhost"
       WEAVIATE_HOST              = local.use_localstack ? "weaviate" : "localhost"
       DYNAMODB_CHUNK_STATS_TABLE = aws_dynamodb_table.paralegal_chunk_stats.name
+      OPENAI_API_KEY             = var.openai_api_key
     }
   }
 }

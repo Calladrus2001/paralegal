@@ -12,7 +12,7 @@ export const handler = async () => {
   try {
     // 1. Identify all chunks that have pending increments in Redis
     const dirtyChunkIds = await ReputationService.getDirtyChunkIds();
-    
+
     if (dirtyChunkIds.length === 0) {
       console.log("No dirty chunks found. Nothing to flush.");
       return;
@@ -29,7 +29,7 @@ export const handler = async () => {
     const failedResults = results.filter(r => r.status === "rejected") as PromiseRejectedResult[];
 
     console.log(`Flush complete. Succeeded: ${succeededCount}, Failed: ${failedResults.length}`);
-    
+
     if (failedResults.length > 0) {
       console.warn(`Encountered ${failedResults.length} failures during reputation flush.`);
       failedResults.forEach((r, i) => {

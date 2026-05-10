@@ -1,4 +1,4 @@
-import { connectToLocal, Filters, type WeaviateClient, type Collection } from "weaviate-client";
+import { connectToLocal, Filters, configure, type WeaviateClient, type Collection } from "weaviate-client";
 import type { SearchQuery } from "../types/query";
 import type { ParalegalRecord, Correction } from "../types/weaviate";
 
@@ -13,6 +13,9 @@ class ParalegalVectorDbClient {
       host: process.env.WEAVIATE_HOST || "localhost",
       port: 8080,
       grpcPort: 50051,
+      headers: {
+        "X-OpenAI-Api-Key": process.env.OPENAI_API_KEY!,
+      },
     });
     await this.client.isReady();
 
@@ -20,6 +23,11 @@ class ParalegalVectorDbClient {
     if (!collections.some((collection) => collection.name === "Paralegal")) {
       await this.client.collections.create({
         name: "Paralegal",
+        vectorizers: configure.vectorizer.text2VecOpenAI({
+          name: "text",
+          sourceProperties: ["text"],
+          model: "text-embedding-3-small",
+        }),
         properties: [
           { name: "text", dataType: "text" },
           { name: "chunk_index", dataType: "int" },
