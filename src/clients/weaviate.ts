@@ -125,12 +125,18 @@ class ParalegalVectorDbClient {
                 const uncontested = corrections.filter(c => !c.contested);
                 const contested = corrections.filter(c => c.contested);
 
+                const sanitize = (str: string) => str.replace(/<\/user_correction>/g, "");
+
                 let patchStr = "";
                 if (uncontested.length > 0) {
-                  patchStr += `\n\n[SYSTEM OVERRIDE]: The following information in this chunk is known to be INCORRECT. Apply these corrections:\n` + uncontested.map(c => `- Incorrect: "${c.incorrect_claim}" -> Correct: "${c.correct_value}"`).join("\n");
+                  patchStr += `\n\n[Correction Patch]: The following information in this chunk is known to be INCORRECT. Apply these updates:\n<user_correction>\n` + 
+                    uncontested.map(c => `- Incorrect: "${sanitize(c.incorrect_claim)}" -> Correct: "${sanitize(c.correct_value)}"`).join("\n") + 
+                    `\n</user_correction>`;
                 }
                 if (contested.length > 0) {
-                  patchStr += `\n\n[SYSTEM WARNING]: Users have submitted CONFLICTING feedback about the following claims in this chunk. You MUST warn the user that this information is disputed and they should verify safely on their own:\n` + contested.map(c => `- Disputed claim: "${c.incorrect_claim}" -> Users disagree whether it should be: "${c.correct_value}"`).join("\n");
+                  patchStr += `\n\n[Disputed Claims]: Users have submitted CONFLICTING feedback about the following claims in this chunk. Warn the user that this information is disputed:\n<user_correction>\n` + 
+                    contested.map(c => `- Disputed claim: "${sanitize(c.incorrect_claim)}" -> Proposed: "${sanitize(c.correct_value)}"`).join("\n") + 
+                    `\n</user_correction>`;
                 }
 
                 if (patchStr) {

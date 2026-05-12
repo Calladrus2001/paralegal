@@ -25,13 +25,13 @@ export const SEVERITY_WEIGHTS: Record<FeedbackType, number> = {
 };
 
 export const FeedbackRequestSchema = z.object({
-  responseId: z.string().describe("UUID of the response being evaluated"),
-  chatId: z.string().describe("UUID of the chat this response belongs to"),
-  userId: z.string().describe("UUID of the user submitting feedback"),
+  responseId: z.string().max(64).describe("UUID of the response being evaluated"),
+  chatId: z.string().max(64).describe("UUID of the chat this response belongs to"),
+  userId: z.string().max(64).describe("UUID of the user submitting feedback"),
   feedbackType: FeedbackTypeEnum,
   bucket: FeedbackBucketEnum,
-  incorrectClaim: z.string().optional().describe("Only used for Factually incorrect / Fabricated"),
-  correctValue: z.string().optional().describe("Only used for Factually incorrect / Fabricated"),
+  incorrectClaim: z.string().max(1000).optional().describe("Only used for Factually incorrect / Fabricated"),
+  correctValue: z.string().max(1000).optional().describe("Only used for Factually incorrect / Fabricated"),
 }).superRefine((data, ctx) => {
   // Enforce correctable fields for factuality issues
   const isFactualityIssue =
@@ -68,9 +68,9 @@ export interface FeedbackRecord extends FeedbackRequest {
 }
 
 export const AttributionResultSchema = z.object({
-  culpritChunkId: z.string().nullable().describe("The UUID of the chunk most likely responsible for the incorrect claim"),
-  evidenceQuote: z.string().describe("The specific sentence or phrase from the chunk that contains the error. If not found, use an empty string."),
-  reasoning: z.string().describe("Brief explanation of why this chunk was selected"),
+  culpritChunkId: z.string().max(64).nullable().describe("The UUID of the chunk most likely responsible for the incorrect claim"),
+  evidenceQuote: z.string().max(2000).describe("The specific sentence or phrase from the chunk that contains the error. If not found, use an empty string."),
+  reasoning: z.string().max(1000).describe("Brief explanation of why this chunk was selected"),
   confidence: z.number().min(0).max(1).describe("The LLM's confidence in this attribution (0-1)")
 });
 
