@@ -35,23 +35,6 @@ services:
       timeout: 5s
       retries: 5
 
-  app:
-    build: .
-    container_name: paralegal-app
-    ports:
-      - "3000:3000"
-    environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AWS_DEFAULT_ENDPOINT=http://localstack:4566
-      - WEAVIATE_HOST=weaviate
-      - REDIS_HOST=redis
-    depends_on:
-      localstack:
-        condition: service_healthy
-      weaviate:
-        condition: service_started
-      redis:
-        condition: service_started
 
   dynamodb-admin:
     image: aaronshaf/dynamodb-admin

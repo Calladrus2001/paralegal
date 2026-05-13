@@ -21,17 +21,29 @@ jobs:
             fi
             cd ~/paralegal
             git pull origin main
+
             echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+            docker compose up -d
 
-            docker compose up --build -d
-
+            ~/.bun/bin/bun install
+            ~/.bun/bin/bun run build
             echo "Waiting for LocalStack to be healthy..."
             until docker inspect --format='{{.State.Health.Status}}' localstack | grep -q "healthy"; do
               sleep 5
             done
             echo "LocalStack is healthy."
+
             cd infra
             terraform init -input=false
             terraform workspace select local || terraform workspace new local
             terraform apply -auto-approve -input=false \
               -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}"
+
+            cd ..
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            ~/.npm-global/bin/pm2 start "bun run src/common/run-with-env.ts config/local.json src/index.ts" \
+              --name "paralegal-app" \
+              --interpreter ~/.bun/bin/bun \
+              --update-env || \
+            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            ~/.npm-global/bin/pm2 restart "paralegal-app" --update-env
