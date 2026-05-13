@@ -26,8 +26,9 @@ jobs:
             chmod +x ./scripts/setup-localstack.sh
             CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
             export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-            pm2 start "bun run src/common/run-with-env.ts config/local.json src/index.ts" \
+            pm2 start src/common/run-with-env.ts \
               --name "paralegal-app" \
               --interpreter bun \
-              --update-env || \
+              --update-env \
+              -- config/local.json src/index.ts || \
             pm2 restart "paralegal-app" --update-env
