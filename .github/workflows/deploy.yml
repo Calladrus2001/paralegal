@@ -20,33 +20,14 @@ jobs:
             export PATH="$BUN_INSTALL/bin:$PATH"
             export PATH="$PATH:$HOME/.npm-global/bin"
 
-            rm -rf paralegal
-            git clone https://github.com/${{ github.repository }} ~/paralegal
+            rm -rf ~/paralegal && git clone https://github.com/${{ github.repository }} ~/paralegal
             cd ~/paralegal
-            git pull origin main
 
-            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
-            docker compose up -d
-
-            bun install --frozen-lockfile
-            bun run build
-            echo "Waiting for LocalStack to be healthy..."
-            until docker inspect --format='{{.State.Health.Status}}' localstack | grep -q "healthy"; do
-              sleep 5
-            done
-            echo "LocalStack is healthy."
-
-            cd infra
-            terraform init -input=false
-            terraform workspace select local || terraform workspace new local
-            terraform apply -auto-approve -input=false \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}"
-
-            cd ..
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
+            chmod +x ./scripts/setup-localstack.sh
+            CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
+            export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             pm2 start "bun run src/common/run-with-env.ts config/local.json src/index.ts" \
               --name "paralegal-app" \
               --interpreter bun \
               --update-env || \
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} \
             pm2 restart "paralegal-app" --update-env

@@ -5,8 +5,17 @@ echo "🧹 Tearing down existing containers..."
 docker stop $(docker ps -q) 2>/dev/null || true
 docker rm $(docker ps -aq) 2>/dev/null || true
 
+# Determine if we should start dev tools (skip if CI is true)
+IS_CI=${CI:-false}
+
 echo "📦 Starting infrastructure services..."
-docker compose --profile dev up -d localstack weaviate redis dynamodb-admin redisinsight
+if [ "$IS_CI" = "true" ]; then
+  # Production/CI mode: No UI tools
+  docker compose up -d localstack weaviate redis
+else
+  # Local dev mode: Include UI tools
+  docker compose --profile dev up -d localstack weaviate redis dynamodb-admin redisinsight
+fi
 
 echo "⏳ Waiting for services to become available..."
 
@@ -28,17 +37,19 @@ until docker exec redis redis-cli ping 2>/dev/null | grep -q "PONG"; do
   echo "⌛ Still waiting for Redis to be ready..."
 done
 
-# Wait for DynamoDB Admin
-until curl -s http://localhost:8001 >/dev/null 2>&1; do
-  sleep 2
-  echo "⌛ Still waiting for DynamoDB Admin to be ready..."
-done
+if [ "$IS_CI" != "true" ]; then
+  # Wait for DynamoDB Admin
+  until curl -s http://localhost:8001 >/dev/null 2>&1; do
+    sleep 2
+    echo "⌛ Still waiting for DynamoDB Admin to be ready..."
+  done
 
-# Wait for RedisInsight
-until curl -s http://localhost:5540 >/dev/null 2>&1; do
-  sleep 2
-  echo "⌛ Still waiting for RedisInsight to be ready..."
-done
+  # Wait for RedisInsight
+  until curl -s http://localhost:5540 >/dev/null 2>&1; do
+    sleep 2
+    echo "⌛ Still waiting for RedisInsight to be ready..."
+  done
+fi
 
 echo "✅ Services are ready!"
 
@@ -50,9 +61,16 @@ export AWS_ENDPOINT=http://localhost:4566
 
 echo "🚀 Provisioning AWS resources..."
 
-cd ..
+# Get absolute path to the infra directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+cd "$PROJECT_ROOT"
+# Ensure dependencies are installed for build
+bun install
 bun run build
-cd ./infra
-terraform init
+
+cd "$PROJECT_ROOT/infra"
+terraform init -input=false
 terraform workspace select local || terraform workspace new local
-terraform apply -auto-approve
+terraform apply -auto-approve -input=false -var="openai_api_key=${OPENAI_API_KEY:-}"
