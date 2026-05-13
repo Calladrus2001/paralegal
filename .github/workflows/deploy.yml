@@ -20,16 +20,15 @@ jobs:
             export PATH="$BUN_INSTALL/bin:$PATH"
             export PATH="$PATH:$HOME/.npm-global/bin"
 
-            if [ ! -d ~/paralegal ]; then
-              git clone https://github.com/${{ github.repository }} ~/paralegal
-            fi
+            rm -rf paralegal
+            git clone https://github.com/${{ github.repository }} ~/paralegal
             cd ~/paralegal
             git pull origin main
 
             echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
             docker compose up -d
 
-            bun install
+            bun install --frozen-lockfile
             bun run build
             echo "Waiting for LocalStack to be healthy..."
             until docker inspect --format='{{.State.Health.Status}}' localstack | grep -q "healthy"; do
