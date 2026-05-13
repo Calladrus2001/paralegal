@@ -38,6 +38,7 @@
     "nanoid": "^5.1.5",
     "p-retry": "^7.1.1",
     "pdf-parse": "1.1.4",
+    "helmet": "^8.0.0",
     "weaviate-client": "^3.9.0",
     "zod": "^4.0.14"
   }
