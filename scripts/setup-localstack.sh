@@ -5,8 +5,8 @@ echo "🧹 Tearing down existing containers..."
 docker stop $(docker ps -q) 2>/dev/null || true
 docker rm $(docker ps -aq) 2>/dev/null || true
 
-echo "📦 Starting all services..."
-docker-compose up -d
+echo "📦 Starting infrastructure services..."
+docker compose --profile dev up -d localstack weaviate redis dynamodb-admin redisinsight
 
 echo "⏳ Waiting for services to become available..."
 
@@ -23,7 +23,7 @@ until curl -sSf http://localhost:8080/v1/.well-known/ready >/dev/null 2>&1; do
 done
 
 # Wait for Redis
-until docker exec -it $(docker ps -q --filter ancestor=redis:alpine) redis-cli ping | grep -q "PONG"; do
+until docker exec redis redis-cli ping 2>/dev/null | grep -q "PONG"; do
   sleep 2
   echo "⌛ Still waiting for Redis to be ready..."
 done
@@ -32,6 +32,12 @@ done
 until curl -s http://localhost:8001 >/dev/null 2>&1; do
   sleep 2
   echo "⌛ Still waiting for DynamoDB Admin to be ready..."
+done
+
+# Wait for RedisInsight
+until curl -s http://localhost:5540 >/dev/null 2>&1; do
+  sleep 2
+  echo "⌛ Still waiting for RedisInsight to be ready..."
 done
 
 echo "✅ Services are ready!"

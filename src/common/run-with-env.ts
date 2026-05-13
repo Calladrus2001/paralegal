@@ -22,7 +22,7 @@ const config = JSON.parse(configRaw);
 // Spawn Bun process with merged env
 const child = spawn(process.execPath, [entryPath], {
   stdio: "inherit",
-  env: { ...process.env, ...config },
+  env: { ...config, ...process.env },
 });
 
 child.on("exit", (code) => process.exit(code ?? 0));

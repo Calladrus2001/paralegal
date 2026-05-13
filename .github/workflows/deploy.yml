@@ -1,0 +1,37 @@
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 10m
+          script: |
+            if [ ! -d ~/paralegal ]; then
+              git clone https://github.com/${{ github.repository }} ~/paralegal
+            fi
+            cd ~/paralegal
+            git pull origin main
+            echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env
+
+            docker compose up --build -d
+
+            echo "Waiting for LocalStack to be healthy..."
+            until docker inspect --format='{{.State.Health.Status}}' localstack | grep -q "healthy"; do
+              sleep 5
+            done
+            echo "LocalStack is healthy."
+            cd infra
+            terraform init -input=false
+            terraform workspace select local || terraform workspace new local
+            terraform apply -auto-approve -input=false \
+              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}"
