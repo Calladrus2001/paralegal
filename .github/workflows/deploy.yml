@@ -16,10 +16,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 10m
           script: |
-            export BUN_INSTALL="$HOME/.bun"
-            export PATH="$BUN_INSTALL/bin:$PATH"
-            export PATH="$PATH:$HOME/.npm-global/bin"
-
             rm -rf ~/paralegal && git clone https://github.com/${{ github.repository }} ~/paralegal
             cd ~/paralegal
 
