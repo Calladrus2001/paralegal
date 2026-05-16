@@ -56,6 +56,18 @@ curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo 
 sudo apt update
 sudo apt install -y caddy
 
+# 9. Configure Caddy Reverse Proxy
+echo "🔧 Configuring Caddy Reverse Proxy..."
+DOMAIN="api.paralegal.vishesh-dugar.me"
+cat <<EOF | sudo tee /etc/caddy/Caddyfile
+$DOMAIN {
+    reverse_proxy localhost:3000
+}
+EOF
+
+echo "🔄 Restarting Caddy..."
+sudo systemctl restart caddy
+
 echo "--------------------------------------------------"
 echo "✅ Setup Complete!"
 echo "⚠️  IMPORTANT: Please log out and log back in (or run 'newgrp docker') for Docker permissions to take effect."

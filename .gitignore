@@ -40,3 +40,6 @@ terraform.tfvars
 
 # Dev
 sample_pdfs
+
+# EC2
+*.pem
