@@ -2,53 +2,29 @@ import { Router } from "express";
 import { validateBodyMiddleware } from "../middleware/validateBodyMiddleware";
 import { ChatRequestSchema } from "../types/query";
 import type { ChatRequest } from "../types/query";
-import { createPdfAgent } from "../clients/openai";
-import { ChatSummaryService } from "../services/summary";
+import { model } from "../clients/openai";
+import paralegalVectorDbClient from "../clients/weaviate";
 import { ChatService } from "../services/chat";
 import pRetry from "p-retry";
 import { nanoid } from "nanoid";
-import { buildAgentMessages } from "../tools";
+import { buildQaMessages } from "../tools";
 import { ReputationService } from "../services/reputation";
 
 const router = Router();
 
 
-function persistQueryRecord(params: {
+const persistQueryRecord = (params: {
   chatId: string;
   userId: string;
   query: string;
   responseId: string;
   assistantResponse: string;
-  agentMessages: any[];
-}) {
-  const { chatId, userId, query, responseId, assistantResponse, agentMessages } = params;
-
-  const toolMsg = agentMessages.find(
-    (m) => m.name === "fetchRelevantChunks" && typeof m.content === "string"
-  );
-
-  const { retrievedChunkIds, retrievedScores } = (() => {
-    if (toolMsg) {
-      try {
-        const chunks = JSON.parse(toolMsg.content as string);
-        if (Array.isArray(chunks) && chunks.length > 0) {
-          return {
-            retrievedChunkIds: chunks.map((c: any) => c.id).filter(Boolean),
-            retrievedScores: chunks.map((c: any) => c.score).filter((s: any) => s != null),
-          };
-        }
-      } catch (e) {
-        console.error("Failed to parse tool message content", e);
-      }
-    }
-    return { retrievedChunkIds: undefined, retrievedScores: undefined };
-  })();
+  retrievedChunkIds?: string[];
+  retrievedScores?: number[];
+}) => {
+  const { chatId, userId, query, responseId, assistantResponse, retrievedChunkIds, retrievedScores } = params;
 
   Promise.allSettled([
-    pRetry(
-      () => ChatSummaryService.updateContext(chatId, query, assistantResponse),
-      { retries: 3 }
-    ),
     pRetry(
       () =>
         ChatService.addMessage({
@@ -78,19 +54,30 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
   try {
     const { userId, fileId, chatId, query } = req.body as ChatRequest;
 
-    const messages = await buildAgentMessages(chatId, query);
-    const agent = createPdfAgent(userId, fileId);
-    const response = await agent.invoke({ messages });
+    const chunks = await paralegalVectorDbClient.search({ query, userId, fileId });
+    const messages = await buildQaMessages(chatId, query, chunks);
+    const response = await model.invoke(messages);
 
     const responseId = nanoid();
-    const assistantResponse = response.messages[response.messages.length - 1]?.content as string;
+    const assistantResponse = response.content as string;
+
+    const retrievedChunkIds = chunks.map((c) => c.id).filter(Boolean);
+    const retrievedScores = chunks.map((c) => c.score).filter((s) => s != null);
 
     res.on("finish", () =>
-      persistQueryRecord({ chatId, userId, query, responseId, assistantResponse, agentMessages: response.messages })
+      persistQueryRecord({
+        chatId,
+        userId,
+        query,
+        responseId,
+        assistantResponse,
+        retrievedChunkIds,
+        retrievedScores,
+      })
     );
     res.json({ responseId, response: assistantResponse });
   } catch (err: any) {
-    console.error("Agent error:", err);
+    console.error("QA error:", err);
     res.status(500).json({ error: err.message });
   }
 });

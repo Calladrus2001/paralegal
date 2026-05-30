@@ -42,31 +42,38 @@ echo "$RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
   echo "$BODY" | jq .
 done
 
-DLQ_NAME="local-paralegal-upload-dlq"
-DLQ_URL=$(aws --endpoint-url=$AWS_ENDPOINT sqs get-queue-url \
-  --queue-name "$DLQ_NAME" \
-  --query 'QueueUrl' --output text)
+# Get all queue URLs, default to empty array if none exist
+QUEUES_JSON=$(aws --endpoint-url=$AWS_ENDPOINT sqs list-queues --output json || echo '{"QueueUrls":[]}')
+# Parse and filter URLs containing "dlq" (case insensitive)
+DLQ_URLS=$(echo "$QUEUES_JSON" | jq -r '.QueueUrls[]? | select(ascii_downcase | contains("dlq"))' || echo "")
 
-echo -e "\n🔍 Fetching messages from DLQ $DLQ_NAME..."
-
-DLQ_RESPONSE=$(aws --endpoint-url=$AWS_ENDPOINT sqs receive-message \
-  --queue-url "$DLQ_URL" \
-  --max-number-of-messages 10 \
-  --visibility-timeout 0 \
-  --wait-time-seconds 1 \
-  --output json)
-
-NUM_DLQ_MESSAGES=$(echo "$DLQ_RESPONSE" | jq '.Messages | length')
-if [[ "$NUM_DLQ_MESSAGES" -eq 0 ]]; then
-  echo "✅ No messages in the DLQ."
+if [[ -z "$DLQ_URLS" ]]; then
+  echo -e "\n✅ No DLQs found in LocalStack."
 else
-  echo "$DLQ_RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
-    MESSAGE_ID=$(echo "$msg" | jq -r '.MessageId')
-    BODY=$(echo "$msg" | jq -r '.Body')
+  for DLQ_URL in $DLQ_URLS; do
+    DLQ_NAME="${DLQ_URL##*/}"
+    echo -e "\n🔍 Fetching messages from DLQ $DLQ_NAME..."
 
-    echo -e "\n⚠️ DLQ Message ID: $MESSAGE_ID"
-    echo "📨 Body:"
-    echo "$BODY" | jq .
+    DLQ_RESPONSE=$(aws --endpoint-url=$AWS_ENDPOINT sqs receive-message \
+      --queue-url "$DLQ_URL" \
+      --max-number-of-messages 10 \
+      --visibility-timeout 0 \
+      --wait-time-seconds 1 \
+      --output json)
+
+    NUM_DLQ_MESSAGES=$(echo "$DLQ_RESPONSE" | jq '.Messages | length')
+    if [[ "$NUM_DLQ_MESSAGES" -eq 0 ]]; then
+      echo "✅ No messages in DLQ $DLQ_NAME."
+    else
+      echo "$DLQ_RESPONSE" | jq -c '.Messages[]' | while read -r msg; do
+        MESSAGE_ID=$(echo "$msg" | jq -r '.MessageId')
+        BODY=$(echo "$msg" | jq -r '.Body')
+
+        echo -e "\n⚠️ [DLQ: $DLQ_NAME] Message ID: $MESSAGE_ID"
+        echo "📨 Body:"
+        echo "$BODY" | jq .
+      done
+    fi
   done
 fi
 

@@ -22,6 +22,7 @@ jobs:
             chmod +x ./scripts/setup-localstack.sh
             CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
             export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+            export AWS_DEFAULT_ENDPOINT="https://aws.paralegal.vishesh-dugar.me"
             pm2 start src/common/run-with-env.ts \
               --name "paralegal-app" \
               --interpreter bun \

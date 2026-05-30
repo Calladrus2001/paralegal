@@ -59,9 +59,14 @@ sudo apt install -y caddy
 # 9. Configure Caddy Reverse Proxy
 echo "🔧 Configuring Caddy Reverse Proxy..."
 DOMAIN="api.paralegal.vishesh-dugar.me"
+AWS_DOMAIN="aws.paralegal.vishesh-dugar.me"
 cat <<EOF | sudo tee /etc/caddy/Caddyfile
 $DOMAIN {
     reverse_proxy localhost:3000
+}
+
+$AWS_DOMAIN {
+    reverse_proxy localhost:4566
 }
 EOF
 

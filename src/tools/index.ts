@@ -1,47 +1,29 @@
-import { tool } from "langchain";
-import { z } from "zod";
-import { SearchQuerySchema } from "../types/query";
-import paralegalVectorDbClient from "../clients/weaviate";
-import { ChatSummaryService } from "../services/summary";
-import { buildCaseSummaryContext } from "../prompts/query";
+import { ChatService } from "../services/chat";
+import { PDF_QA_SYSTEM_PROMPT } from "../prompts/query";
 
-/**
- * Creates a fetchRelevantChunks tool with userId and fileId pre-bound.
- * This avoids relying on the LLM to correctly pass these values from a system message.
- */
-export function createFetchChunksTool(userId: string, fileId: string) {
-  return tool(
-    async ({ query }) => {
-      const result = await paralegalVectorDbClient.search({ query, userId, fileId });
-      return JSON.stringify(result);
-    },
-    {
-      name: "fetchRelevantChunks",
-      description: "Retrieve relevant chunks from the vector DB based on a query",
-      schema: z.object({
-        query: z.string().min(10).describe("The query to search for in the knowledge base"),
-      }),
-    }
-  );
-}
-
-export const buildAgentMessages = async (chatId: string, query: string) => {
-  const { summary, lastTurn } = await ChatSummaryService.getContext(chatId);
+export const buildQaMessages = async (
+  chatId: string,
+  query: string,
+  chunks: Array<{ id: string; text: string }>
+) => {
+  const history = await ChatService.getMessagesForChat(chatId);
   const messages: Array<{ role: string; content: string }> = [];
 
-  if (summary) {
-    messages.push({ role: "system", content: buildCaseSummaryContext(summary) });
+  messages.push({ role: "system", content: PDF_QA_SYSTEM_PROMPT });
+
+  for (const message of history) {
+    messages.push({ role: "user", content: message.query });
+    messages.push({ role: "assistant", content: message.response });
   }
 
-  if (lastTurn) {
-    messages.push({ role: "user", content: lastTurn.user });
-    messages.push({ role: "assistant", content: lastTurn.assistant });
-  }
+  const formattedChunks = chunks
+    .map((c, i) => `[Document Chunk ${i + 1}] (ID: ${c.id})\n${c.text}`)
+    .join("\n\n");
 
   messages.push({
     role: "user",
-    content: query,
+    content: `Relevant document chunks:\n${formattedChunks}\n\nUser Query: ${query}`,
   });
 
   return messages;
-}
+};

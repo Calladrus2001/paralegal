@@ -5,7 +5,7 @@ import paralegalVectorDbClient from "../clients/weaviate";
 import type { Correction } from "../types/weaviate";
 import { nanoid } from "nanoid";
 import { AuditorSchema, type AuditorResult } from "../types/correction";
-import { summarizerModel } from "../clients/openai";
+import { miniModel } from "../clients/openai";
 import { buildCorrectionAuditorPrompt } from "../prompts/correction";
 
 export class CorrectionService {
@@ -25,7 +25,7 @@ export class CorrectionService {
       };
     }
 
-    const structuredModel = summarizerModel.withStructuredOutput(AuditorSchema);
+    const structuredModel = miniModel.withStructuredOutput(AuditorSchema);
 
     const existingCorrectionsText = existingCorrections
       .map(

@@ -8,6 +8,10 @@ docker rm $(docker ps -aq) 2>/dev/null || true
 # Determine if we should start dev tools (skip if CI is true)
 IS_CI=${CI:-false}
 
+if [ "$IS_CI" = "true" ]; then
+  export LOCALSTACK_HOST="aws.paralegal.vishesh-dugar.me"
+fi
+
 echo "📦 Starting infrastructure services..."
 if [ "$IS_CI" = "true" ]; then
   # Production/CI mode: No UI tools

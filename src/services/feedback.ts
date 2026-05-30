@@ -2,7 +2,7 @@ import { PutCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { dynamo, FEEDBACKS_TABLE, CHUNK_ATTRIBUTIONS_TABLE } from "../clients/aws";
 import { batchWriteItems } from "../common/dynamodb";
 import { nanoid } from "nanoid";
-import { summarizerModel } from "../clients/openai";
+import { miniModel } from "../clients/openai";
 import type { FeedbackRequest, FeedbackRecord, AttributionResult } from "../types/feedback";
 import { AttributionResultSchema } from "../types/feedback";
 import { buildAttributionPrompt } from "../prompts/feedback";
@@ -93,7 +93,7 @@ export class FeedbackService {
       };
     }
 
-    const structuredModel = summarizerModel.withStructuredOutput(AttributionResultSchema);
+    const structuredModel = miniModel.withStructuredOutput(AttributionResultSchema);
 
     const chunksText = candidateChunks
       .map((c) => `[ID: ${c.id}] Chunk Content:\n${c.text}\n---`)
