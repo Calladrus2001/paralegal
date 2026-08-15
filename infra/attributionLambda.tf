@@ -1,7 +1,7 @@
 data "archive_file" "attribution_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/attributionLambda"
-  output_path = "${path.module}/../dist/attributionLambda.zip"
+  source_dir  = "${path.module}/../dist/server/attributionLambda"
+  output_path = "${path.module}/../dist/server/attributionLambda.zip"
 }
 
 resource "aws_s3_object" "attribution_lambda_zip" {

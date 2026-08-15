@@ -6,6 +6,7 @@ export interface ParalegalRecord {
   text: string;
   chunk_index: number;
   userId: string;
+  chatId: string;
   fileId: string;
   feedback_score?: number;
   feedback_tier?: ReputationTier;

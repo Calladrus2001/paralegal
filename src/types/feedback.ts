@@ -13,6 +13,7 @@ export const FeedbackTypeEnum = z.enum([
 export const FeedbackBucketEnum = z.enum(["LLM", "Human"]);
 
 export type FeedbackType = z.infer<typeof FeedbackTypeEnum>;
+export type FeedbackBucket = z.infer<typeof FeedbackBucketEnum>;
 
 export const SEVERITY_WEIGHTS: Record<FeedbackType, number> = {
   "Fabricated information": 1.0,
@@ -57,6 +58,9 @@ export const FeedbackRequestSchema = z.object({
 });
 
 export type FeedbackRequest = z.infer<typeof FeedbackRequestSchema>;
+
+export type FeedbackSubmissionPayload = FeedbackRequest;
+export type FeedbackStatus = "idle" | "submitting" | "submitted" | "error";
 
 export interface FeedbackRecord extends FeedbackRequest {
   feedbackId: string;

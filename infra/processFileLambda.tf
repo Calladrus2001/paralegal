@@ -85,8 +85,8 @@ resource "aws_iam_role_policy" "lambda_custom_policy" {
 
 data "archive_file" "process_file_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/processFileLambda"
-  output_path = "${path.module}/../dist/processFileLambda.zip"
+  source_dir  = "${path.module}/../dist/server/processFileLambda"
+  output_path = "${path.module}/../dist/server/processFileLambda.zip"
 }
 
 resource "aws_s3_object" "process_file_lambda_zip" {

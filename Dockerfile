@@ -10,4 +10,4 @@ RUN bun run build
 
 EXPOSE 3000
 
-ENTRYPOINT ["bun", "run", "src/common/run-with-env.ts", "config/local.json", "src/index.ts"]
+ENTRYPOINT ["bun", "run", "src/common/run-with-env.ts", "config/local.json", "src/server/index.ts"]

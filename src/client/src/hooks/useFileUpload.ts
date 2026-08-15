@@ -1,0 +1,74 @@
+import { useCallback } from "react";
+import { useAppDispatch, useAppSelector } from "../store";
+import {
+  openUploadModal,
+  closeUploadModal,
+  uploadDocument,
+  clearUploadError,
+} from "../store/slices/uploadSlice";
+import { showToast } from "../store/slices/toastSlice";
+
+export interface UploadResult {
+  fileId: string;
+  fileName: string;
+  chatId: string;
+}
+
+export function useFileUpload() {
+  const dispatch = useAppDispatch();
+  const userId = useAppSelector((state) => state.user.userId);
+  const activeChatId = useAppSelector((state) => state.chat.activeChatId);
+  const { isModalOpen, isUploading, uploadError, uploadSuccess } = useAppSelector(
+    (state) => state.upload
+  );
+
+  const handleOpenModal = useCallback(() => {
+    dispatch(openUploadModal());
+  }, [dispatch]);
+
+  const handleCloseModal = useCallback(() => {
+    dispatch(closeUploadModal());
+  }, [dispatch]);
+
+  const handleUpload = useCallback(
+    async (file: File, targetChatId?: string): Promise<UploadResult | null> => {
+      const chatId = targetChatId || activeChatId || undefined;
+
+      const action = await dispatch(uploadDocument({ userId, chatId, file }));
+      if (uploadDocument.fulfilled.match(action)) {
+        dispatch(
+          showToast({
+            message: `"${file.name}" uploaded successfully and queued for indexing.`,
+            type: "success",
+          })
+        );
+        return action.payload;
+      } else {
+        const errorMsg = (action.payload as string) || "Failed to upload document";
+        dispatch(
+          showToast({
+            message: errorMsg,
+            type: "error",
+          })
+        );
+        return null;
+      }
+    },
+    [dispatch, userId, activeChatId]
+  );
+
+  const handleClearError = useCallback(() => {
+    dispatch(clearUploadError());
+  }, [dispatch]);
+
+  return {
+    isModalOpen,
+    isUploading,
+    uploadError,
+    uploadSuccess,
+    openModal: handleOpenModal,
+    closeModal: handleCloseModal,
+    uploadFile: handleUpload,
+    clearError: handleClearError,
+  };
+}

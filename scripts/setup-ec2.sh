@@ -60,6 +60,7 @@ sudo apt install -y caddy
 echo "🔧 Configuring Caddy Reverse Proxy..."
 DOMAIN="api.paralegal.vishesh-dugar.me"
 AWS_DOMAIN="aws.paralegal.vishesh-dugar.me"
+UI_DOMAIN="paralegal.vishesh-dugar.me"
 cat <<EOF | sudo tee /etc/caddy/Caddyfile
 $DOMAIN {
     reverse_proxy localhost:3000
@@ -67,6 +68,12 @@ $DOMAIN {
 
 $AWS_DOMAIN {
     reverse_proxy localhost:4566
+}
+
+$UI_DOMAIN {
+    root * /home/ubuntu/paralegal/dist/client
+    file_server
+    try_files {path} /index.html
 }
 EOF
 

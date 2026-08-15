@@ -5,22 +5,25 @@
   "private": true,
   "devDependencies": {
     "@types/bun": "latest",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/pdf-parse": "^1.1.5",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
     "adm-zip": "^0.5.16",
-    "esbuild": "^0.25.11"
-  },
-  "peerDependencies": {
-    "typescript": "^5",
-    "@types/ioredis": "^5.0.0"
+    "esbuild": "^0.25.11",
+    "typescript": "~5.8.3",
+    "vite": "^8.2.0"
   },
   "scripts": {
-    "dev": "bun run ./src/common/run-with-env.ts config/local.json ./src/index.ts",
-    "dev:prod": "bun run ./src/common/run-with-env.ts config/prod.json ./src/index.ts",
-    "dev:processFileLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/processFileLambda/dev.ts",
-    "dev:flushLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/flushLambda/dev.ts",
-    "dev:attributionLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/lambdas/attributionLambda/dev.ts",
-    "build": "bun esbuild.mjs"
+    "dev": "bun scripts/dev.ts",
+    "dev:live": "bun run ./src/common/run-with-env.ts config/live.json ./src/server/index.ts",
+    "dev:processFileLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/processFileLambda/dev.ts",
+    "dev:flushLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/flushLambda/dev.ts",
+    "dev:attributionLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/attributionLambda/dev.ts",
+    "build": "bun esbuild.mjs && bun x vite build",
+    "lint:tsc": "tsc --noEmit"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1009.0",
@@ -31,14 +34,26 @@
     "@langchain/core": "^1.0.3",
     "@langchain/openai": "^1.0.0",
     "@langchain/textsplitters": "^1.0.0",
+    "@reduxjs/toolkit": "^2.12.0",
+    "@tailwindcss/vite": "^4.3.3",
     "aws-lambda": "^1.0.7",
+    "clsx": "^2.1.1",
+    "cors": "^2.8.6",
     "express": "^5.1.0",
+    "helmet": "^8.0.0",
     "ioredis": "^5.10.0",
     "langchain": "^1.0.3",
+    "lucide-react": "^1.31.0",
     "nanoid": "^5.1.5",
     "p-retry": "^7.1.1",
     "pdf-parse": "1.1.4",
-    "helmet": "^8.0.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-markdown": "^10.1.0",
+    "react-redux": "^9.3.0",
+    "remark-gfm": "^4.0.1",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3",
     "weaviate-client": "^3.9.0",
     "zod": "^4.0.14"
   }

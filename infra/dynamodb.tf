@@ -48,9 +48,10 @@ resource "aws_dynamodb_table" "paralegal_messages" {
   }
 
   global_secondary_index {
-    name            = "responseId-index"
-    hash_key        = "responseId"
-    projection_type = "ALL"
+    name               = "responseId-index"
+    hash_key           = "responseId"
+    projection_type    = "INCLUDE"
+    non_key_attributes = ["retrievedChunkIds", "chatId", "userId"]
   }
 }
 
