@@ -132,7 +132,9 @@ export const chatSlice = createSlice({
       .addCase(createNewChat.fulfilled, (state, action) => {
         state.chats.unshift(action.payload);
         state.activeChatId = action.payload.chatId;
-        state.messages = [];
+        if (!state.isSendingQuery) {
+          state.messages = [];
+        }
       })
       .addCase(createNewChat.rejected, (state, action) => {
         state.error = (action.payload as string) || "Failed to create chat";
@@ -154,7 +156,16 @@ export const chatSlice = createSlice({
       .addCase(fetchChatMessages.fulfilled, (state, action) => {
         state.isFetchingMessages = false;
         if (state.activeChatId === action.payload.chatId) {
-          state.messages = action.payload.messages;
+          const pendingMessages = state.messages.filter(
+            (m) => m.response === "" || m.responseId?.startsWith("pending-")
+          );
+          if (pendingMessages.length > 0) {
+            const fetchedIds = new Set(action.payload.messages.map((m) => m.responseId));
+            const uniquePending = pendingMessages.filter((m) => !fetchedIds.has(m.responseId));
+            state.messages = [...action.payload.messages, ...uniquePending];
+          } else {
+            state.messages = action.payload.messages;
+          }
         }
       })
       .addCase(fetchChatMessages.rejected, (state, action) => {
@@ -167,16 +178,15 @@ export const chatSlice = createSlice({
         state.isSendingQuery = true;
         state.error = null;
         const { chatId, query, userId } = action.meta.arg;
-        if (state.activeChatId === chatId) {
-          state.messages.push({
-            responseId: `pending-${action.meta.requestId}`,
-            chatId,
-            userId,
-            query,
-            response: "",
-            createdAt: new Date().toISOString(),
-          });
-        }
+        state.activeChatId = chatId;
+        state.messages.push({
+          responseId: `pending-${action.meta.requestId}`,
+          chatId,
+          userId,
+          query,
+          response: "",
+          createdAt: new Date().toISOString(),
+        });
       })
       .addCase(sendUserQuery.fulfilled, (state, action) => {
         state.isSendingQuery = false;

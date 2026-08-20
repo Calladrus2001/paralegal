@@ -131,7 +131,13 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="p-3 border-t border-editorial-border text-[11px] text-editorial-faint flex items-center justify-between">
-        <span>Paralegal v1.0</span>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("open-onboarding"))}
+          className="hover:text-editorial-text hover:underline transition-colors cursor-pointer"
+        >
+          Platform Guide
+        </button>
         <span>RAG + Fact Verification</span>
       </div>
     </aside>

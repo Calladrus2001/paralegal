@@ -6,6 +6,7 @@ import { FilesSidebar } from "./components/FilesSidebar";
 import { MessageList } from "./components/MessageList";
 import { MessageInput } from "./components/MessageInput";
 import { UploadModal } from "./components/UploadModal";
+import { OnboardingModal } from "./components/OnboardingModal";
 import { ToastContainer } from "./components/ToastContainer";
 
 const ParalegalApp: React.FC = () => {
@@ -20,6 +21,7 @@ const ParalegalApp: React.FC = () => {
       </main>
 
       <UploadModal />
+      <OnboardingModal />
       <ToastContainer />
     </div>
   );

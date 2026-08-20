@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from "react";
+import { nanoid } from "nanoid";
 import { useAppDispatch, useAppSelector } from "../store";
 import {
   fetchUserChats,
@@ -89,14 +90,10 @@ export function useChat() {
       if (!targetChatId) {
         const words = query.trim().split(/\s+/).slice(0, 5).join(" ");
         const title = words.length < query.trim().length ? `${words}...` : words;
-        const createAction = await dispatch(createNewChat({ userId, title }));
-        if (createNewChat.fulfilled.match(createAction)) {
-          targetChatId = createAction.payload.chatId;
-        } else {
-          const errorMsg = (createAction.payload as string) || "Failed to initialize chat session.";
-          dispatch(showToast({ message: errorMsg, type: "error" }));
-          return;
-        }
+        const newChatId = nanoid();
+        targetChatId = newChatId;
+
+        dispatch(createNewChat({ userId, title, chatId: newChatId }));
       }
 
       const queryAction = await dispatch(
