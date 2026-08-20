@@ -39,9 +39,11 @@ export function useChat() {
 
   const handleSelectChat = useCallback(
     (chatId: string) => {
-      dispatch(setActiveChatId(chatId));
+      if (activeChatId !== chatId) {
+        dispatch(setActiveChatId(chatId));
+      }
     },
-    [dispatch]
+    [dispatch, activeChatId]
   );
 
   const handleCreateChat = useCallback(

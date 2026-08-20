@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { ThumbsUp, ThumbsDown, Copy, Check, Scale, Sparkles, User } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Copy, Check, Scale, Sparkles, User, Loader2 } from "lucide-react";
 import { useChat } from "../hooks/useChat";
 import { useFeedback } from "../hooks/useFeedback";
 import { InlineFeedbackBox } from "./InlineFeedbackBox";
@@ -14,7 +14,7 @@ const SAMPLE_PROMPTS = [
 ];
 
 export const MessageList: React.FC = () => {
-  const { messages, activeChat, isSendingQuery: isSending, sendMessage } = useChat();
+  const { messages, activeChat, isSendingQuery: isSending, isFetchingMessages, sendMessage } = useChat();
   const {
     activeResponseId: activeFeedbackResponseId,
     submissionStatus: feedbackStatusMap,
@@ -36,6 +36,17 @@ export const MessageList: React.FC = () => {
     setCopiedId(id);
     setTimeout(() => setCopiedId(null), 2000);
   };
+
+  if (isFetchingMessages && messages.length === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-6 text-editorial-muted text-xs">
+        <div className="flex items-center gap-2 bg-editorial-surface px-4 py-2 rounded-xl border border-editorial-border shadow-xs">
+          <Loader2 className="w-4 h-4 animate-spin text-stone-600" />
+          <span>Loading consultation history...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!activeChat && messages.length === 0 && !isSending) {
     return (
@@ -120,19 +131,6 @@ export const MessageList: React.FC = () => {
                           {message.response}
                         </ReactMarkdown>
                       </div>
-
-                      {message.retrievedChunkIds &&
-                        message.retrievedChunkIds.length > 0 && (
-                          <div className="pt-3 border-t border-editorial-border flex items-center gap-2 text-[11px] text-editorial-muted font-sans">
-                            <span className="font-semibold text-editorial-text">
-                              Sources Cited:
-                            </span>
-                            <span className="font-mono bg-editorial-bg px-2 py-0.5 rounded border border-editorial-border">
-                              {message.retrievedChunkIds.length} verified segment
-                              {message.retrievedChunkIds.length > 1 ? "s" : ""}
-                            </span>
-                          </div>
-                        )}
                     </div>
 
                     <div className="flex items-center gap-1 text-xs">

@@ -101,8 +101,10 @@ export const chatSlice = createSlice({
   initialState,
   reducers: {
     setActiveChatId(state, action: PayloadAction<string | null>) {
-      state.activeChatId = action.payload;
-      state.messages = [];
+      if (state.activeChatId !== action.payload) {
+        state.activeChatId = action.payload;
+        state.messages = [];
+      }
     },
     clearChatError(state) {
       state.error = null;
