@@ -5,19 +5,59 @@ on:
     branches: [ main ]
 
 jobs:
-  deploy:
+  provision-host:
+    name: Provision Host Infrastructure (AWS EC2 & S3)
+    runs-on: ubuntu-latest
+    outputs:
+      ec2_host: ${{ steps.tf-output.outputs.ec2_public_ip }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-south-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform Init & Apply (Host)
+        working-directory: infra/host
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Export Host Outputs
+        id: tf-output
+        working-directory: infra/host
+        run: |
+          EC2_IP=$(terraform output -raw ec2_public_ip)
+          echo "ec2_public_ip=$EC2_IP" >> $GITHUB_OUTPUT
+
+  deploy-app:
+    name: Deploy App to EC2
+    needs: provision-host
     runs-on: ubuntu-latest
     steps:
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
+          host: ${{ needs.provision-host.outputs.ec2_host }}
+          username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 10m
+          command_timeout: 15m
           script: |
             rm -rf ~/paralegal && git clone https://github.com/${{ github.repository }} ~/paralegal
             cd ~/paralegal
+            if ! command -v bun &> /dev/null || ! command -v docker &> /dev/null || ! command -v pm2 &> /dev/null; then
+              chmod +x ./scripts/setup-ec2.sh
+              ./scripts/setup-ec2.sh
+            fi
 
             chmod +x ./scripts/setup-localstack.sh
             CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
@@ -31,3 +71,4 @@ jobs:
               --update-env \
               -- config/local.json src/server/index.ts || \
             pm2 restart "paralegal-app" --update-env
+            pm2 save

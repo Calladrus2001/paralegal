@@ -3,15 +3,15 @@ locals {
 
   config = {
     local = {
-      use_localstack       = true
-      prefix               = "local"
+      use_localstack = true
+      prefix         = "local"
       cors_allowed_origins = [
         "http://localhost:5173"
       ]
     }
     live = {
-      use_localstack       = false
-      prefix               = "live"
+      use_localstack = false
+      prefix         = "live"
       cors_allowed_origins = [
         "https://*.vishesh-dugar.me",
         "https://vishesh-dugar.me"

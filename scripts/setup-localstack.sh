@@ -74,7 +74,7 @@ cd "$PROJECT_ROOT"
 bun install
 bun run build
 
-cd "$PROJECT_ROOT/infra"
+cd "$PROJECT_ROOT/infra/app"
 terraform init -input=false
 terraform workspace select local || terraform workspace new local
 terraform apply -auto-approve -input=false -var="openai_api_key=${OPENAI_API_KEY:-}"

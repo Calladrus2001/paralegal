@@ -110,8 +110,8 @@ resource "aws_lambda_function" "process_file_lambda" {
 
   environment {
     variables = {
-      LOG_LEVEL     = "info"
-      WEAVIATE_HOST = local.use_localstack ? "weaviate" : "localhost"
+      LOG_LEVEL      = "info"
+      WEAVIATE_HOST  = local.use_localstack ? "weaviate" : "localhost"
       OPENAI_API_KEY = var.openai_api_key
     }
   }

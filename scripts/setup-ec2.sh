@@ -47,6 +47,8 @@ sudo apt install -y nodejs npm
 sudo npm install -g pm2
 # Ensure PM2 is in the system path for GHA
 sudo ln -sf $(which pm2) /usr/bin/pm2 || true
+# Configure PM2 to auto-start on system boot
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
 
 # 8. Install Caddy (Reverse Proxy for SSL)
 echo "🔒 Installing Caddy..."
