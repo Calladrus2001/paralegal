@@ -41,9 +41,10 @@ else
     echo "Bun is already installed."
 fi
 
-# 7. Install Node/NPM & PM2
-echo "📈 Installing PM2..."
-sudo apt install -y nodejs npm
+# 7. Install Node.js (v22 LTS) & PM2
+echo "📈 Installing Node.js 22 & PM2..."
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+sudo apt install -y nodejs
 sudo npm install -g pm2
 # Ensure PM2 is in the system path for GHA
 sudo ln -sf $(which pm2) /usr/bin/pm2 || true

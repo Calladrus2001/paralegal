@@ -22,7 +22,7 @@
     "dev:processFileLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/processFileLambda/dev.ts",
     "dev:flushLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/flushLambda/dev.ts",
     "dev:attributionLambda": "bun run ./src/common/run-with-env.ts config/local.json ./src/server/lambdas/attributionLambda/dev.ts",
-    "build": "bun esbuild.mjs && bun x vite build",
+    "build": "bun esbuild.mjs && bun x --bun vite build",
     "lint:tsc": "tsc --noEmit"
   },
   "dependencies": {

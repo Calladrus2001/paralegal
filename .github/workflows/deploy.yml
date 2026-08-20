@@ -64,7 +64,7 @@ jobs:
             export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             export AWS_DEFAULT_ENDPOINT="https://aws.paralegal.vishesh-dugar.me"
             bun install
-            bun x vite build
+            bun x --bun vite build
             pm2 start src/common/run-with-env.ts \
               --name "paralegal-app" \
               --interpreter bun \
