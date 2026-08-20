@@ -41,7 +41,8 @@ data "aws_iam_policy_document" "lambda_permissions" {
       aws_dynamodb_table.paralegal_chats.arn,
       "${aws_dynamodb_table.paralegal_chats.arn}/index/*",
       aws_dynamodb_table.paralegal_chunk_stats.arn,
-      aws_dynamodb_table.paralegal_chunk_attributions.arn
+      aws_dynamodb_table.paralegal_chunk_attributions.arn,
+      aws_dynamodb_table.paralegal_files.arn
     ]
   }
 
@@ -85,8 +86,8 @@ resource "aws_iam_role_policy" "lambda_custom_policy" {
 
 data "archive_file" "process_file_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/server/processFileLambda"
-  output_path = "${path.module}/../dist/server/processFileLambda.zip"
+  source_dir  = "${path.module}/../../dist/server/processFileLambda"
+  output_path = "${path.module}/../../dist/server/processFileLambda.zip"
 }
 
 resource "aws_s3_object" "process_file_lambda_zip" {
@@ -110,9 +111,10 @@ resource "aws_lambda_function" "process_file_lambda" {
 
   environment {
     variables = {
-      LOG_LEVEL      = "info"
-      WEAVIATE_HOST  = local.use_localstack ? "weaviate" : "localhost"
-      OPENAI_API_KEY = var.openai_api_key
+      LOG_LEVEL            = "info"
+      WEAVIATE_HOST        = local.use_localstack ? "weaviate" : "localhost"
+      OPENAI_API_KEY       = var.openai_api_key
+      DYNAMODB_FILES_TABLE = aws_dynamodb_table.paralegal_files.name
     }
   }
 }

@@ -6,6 +6,7 @@ import {
   uploadDocument,
   clearUploadError,
 } from "../store/slices/uploadSlice";
+import { setSidebarOpen, upsertFile, fetchChatFiles } from "../store/slices/filesSlice";
 import { showToast } from "../store/slices/toastSlice";
 
 export interface UploadResult {
@@ -36,13 +37,28 @@ export function useFileUpload() {
 
       const action = await dispatch(uploadDocument({ userId, chatId, file }));
       if (uploadDocument.fulfilled.match(action)) {
+        const payload = action.payload;
+
+        dispatch(setSidebarOpen(true));
         dispatch(
-          showToast({
-            message: `"${file.name}" uploaded successfully and queued for indexing.`,
-            type: "success",
+          upsertFile({
+            chatId: payload.chatId,
+            fileId: payload.fileId,
+            userId,
+            fileName: payload.fileName,
+            status: "PROCESSING",
+            createdAt: payload.uploadedAt,
+            updatedAt: payload.uploadedAt,
           })
         );
-        return action.payload;
+
+        dispatch(
+          showToast({
+            message: `"${file.name}" uploaded. Processing started...`,
+            type: "info",
+          })
+        );
+        return payload;
       } else {
         const errorMsg = (action.payload as string) || "Failed to upload document";
         dispatch(

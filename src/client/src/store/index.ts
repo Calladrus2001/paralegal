@@ -5,6 +5,7 @@ import chatReducer from "./slices/chatSlice";
 import uploadReducer from "./slices/uploadSlice";
 import feedbackReducer from "./slices/feedbackSlice";
 import toastReducer from "./slices/toastSlice";
+import filesReducer from "./slices/filesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +14,7 @@ export const store = configureStore({
     upload: uploadReducer,
     feedback: feedbackReducer,
     toast: toastReducer,
+    files: filesReducer,
   },
 });
 

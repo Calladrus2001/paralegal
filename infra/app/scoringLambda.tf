@@ -5,8 +5,8 @@
 
 data "archive_file" "scoring_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/server/scoringLambda"
-  output_path = "${path.module}/../dist/server/scoringLambda.zip"
+  source_dir  = "${path.module}/../../dist/server/scoringLambda"
+  output_path = "${path.module}/../../dist/server/scoringLambda.zip"
 }
 
 resource "aws_s3_object" "scoring_lambda_zip" {
@@ -53,8 +53,8 @@ resource "aws_lambda_event_source_mapping" "sqs_to_scoring" {
 
 data "archive_file" "flush_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/server/flushLambda"
-  output_path = "${path.module}/../dist/server/flushLambda.zip"
+  source_dir  = "${path.module}/../../dist/server/flushLambda"
+  output_path = "${path.module}/../../dist/server/flushLambda.zip"
 }
 
 resource "aws_s3_object" "flush_lambda_zip" {

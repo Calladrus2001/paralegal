@@ -1,5 +1,6 @@
 import type { Chat, Message } from "../../../types/chat";
 import type { FeedbackSubmissionPayload } from "../../../types/feedback";
+import type { ChatFile } from "../../../types/file";
 
 const API_BASE = "/api";
 
@@ -98,18 +99,28 @@ export async function apiSendQuery(params: {
 }
 
 /**
+ * Fetch all files for a chat and their processing status
+ */
+export async function apiGetChatFiles(chatId: string): Promise<ChatFile[]> {
+  const res = await fetch(`${API_BASE}/chats/${encodeURIComponent(chatId)}/files`);
+  const data = await handleResponse<{ files: ChatFile[] }>(res);
+  return data.files;
+}
+
+/**
  * Get S3 presigned upload URL for a PDF file
  */
 export async function apiGetPresignedUrl(params: {
   userId: string;
   chatId?: string;
-}): Promise<{ url: string; fileId: string; chatId: string }> {
+  fileName?: string;
+}): Promise<{ url: string; fileId: string; chatId: string; fileName: string }> {
   const res = await fetch(`${API_BASE}/upload`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
-  return handleResponse<{ url: string; fileId: string; chatId: string }>(res);
+  return handleResponse<{ url: string; fileId: string; chatId: string; fileName: string }>(res);
 }
 
 /**

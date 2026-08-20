@@ -22,7 +22,11 @@ export const uploadDocument = createAsyncThunk(
     { rejectWithValue }
   ) => {
     try {
-      const { url, fileId, chatId: resolvedChatId } = await apiGetPresignedUrl({ userId, chatId });
+      const { url, fileId, chatId: resolvedChatId } = await apiGetPresignedUrl({
+        userId,
+        chatId,
+        fileName: file.name,
+      });
       await apiUploadFileToS3(url, file);
 
       return {

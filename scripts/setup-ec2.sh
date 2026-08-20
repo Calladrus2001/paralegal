@@ -74,9 +74,15 @@ $AWS_DOMAIN {
 }
 
 $UI_DOMAIN {
-    root * /home/ubuntu/paralegal/dist/client
-    file_server
-    try_files {path} /index.html
+    handle /api/* {
+        reverse_proxy localhost:3000
+    }
+
+    handle {
+        root * /home/ubuntu/paralegal/dist/client
+        file_server
+        try_files {path} /index.html
+    }
 }
 EOF
 

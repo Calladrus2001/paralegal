@@ -120,3 +120,26 @@ resource "aws_dynamodb_table" "paralegal_chunk_attributions" {
     type = "S"
   }
 }
+
+# ───────────────────────────────────────────
+# Files table
+# PK: chatId  SK: fileId
+# Access: fetch all files and processing status for a chat
+# ───────────────────────────────────────────
+resource "aws_dynamodb_table" "paralegal_files" {
+  name         = "${local.prefix}-paralegal-files"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "chatId"
+  range_key    = "fileId"
+
+  attribute {
+    name = "chatId"
+    type = "S"
+  }
+
+  attribute {
+    name = "fileId"
+    type = "S"
+  }
+}
+

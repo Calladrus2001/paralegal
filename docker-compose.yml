@@ -29,7 +29,7 @@ services:
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=ap-south-1
       - HOSTNAME_EXTERNAL=${LOCALSTACK_HOST:-localhost}
-      - EXTRA_CORS_ALLOWED_ORIGINS=http://localhost:5173
+      - EXTRA_CORS_ALLOWED_ORIGINS=http://localhost:5173,https://paralegal.vishesh-dugar.me,https://vishesh-dugar.me
       - S3_SKIP_SIGNATURE_VALIDATION=1
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"

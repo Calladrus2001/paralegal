@@ -1,7 +1,7 @@
 data "archive_file" "switch_lambda_code" {
   type        = "zip"
-  source_dir  = "${path.module}/../dist/server/switchLambda"
-  output_path = "${path.module}/../dist/server/switchLambda.zip"
+  source_dir  = "${path.module}/../../dist/server/switchLambda"
+  output_path = "${path.module}/../../dist/server/switchLambda.zip"
 }
 
 resource "aws_s3_object" "switch_lambda_zip" {

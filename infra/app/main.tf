@@ -6,7 +6,9 @@ locals {
       use_localstack = true
       prefix         = "local"
       cors_allowed_origins = [
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "https://*.vishesh-dugar.me",
+        "https://vishesh-dugar.me"
       ]
     }
     live = {

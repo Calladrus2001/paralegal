@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { ChatService } from "../services/chat";
+import { FileService } from "../services/file";
 import { nanoid } from "nanoid";
 import { validateQueryMiddleware } from "../middleware/validateQueryMiddleware";
 import { validateBodyMiddleware } from "../middleware/validateBodyMiddleware";
@@ -82,6 +83,25 @@ router.get(
     } catch (error: any) {
       console.error("[ChatRouter] Failed to fetch messages:", error);
       res.status(500).json({ error: "Failed to fetch messages", details: error.message });
+    }
+  }
+);
+
+/**
+ * GET /api/chats/:chatId/files
+ * Fetch all uploaded files and their processing status for a specific chat.
+ */
+router.get(
+  "/:chatId/files",
+  validateParamsMiddleware(GetChatMessagesParamsSchema),
+  async (req, res) => {
+    try {
+      const { chatId } = req.params as unknown as GetChatMessagesParams;
+      const files = await FileService.getFilesForChat(chatId);
+      res.json({ files });
+    } catch (error: any) {
+      console.error("[ChatRouter] Failed to fetch files for chat:", error);
+      res.status(500).json({ error: "Failed to fetch files", details: error.message });
     }
   }
 );

@@ -3,6 +3,7 @@ import { s3 } from "../../clients/aws";
 import PDFParse from "pdf-parse";
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
 import paralegalVectorDbClient from "../../clients/weaviate";
+import { FileService } from "../../services/file";
 
 const splitter = new RecursiveCharacterTextSplitter({
   chunkSize: 1500,
@@ -10,25 +11,26 @@ const splitter = new RecursiveCharacterTextSplitter({
 });
 
 export const handler = async (event: SQSEvent) => {
-  try {
-    for (const sqsRecord of event.Records) {
-      const s3Event: S3Event = JSON.parse(sqsRecord.body);
-      const s3Records = s3Event.Records || [];
+  for (const sqsRecord of event.Records) {
+    const s3Event: S3Event = JSON.parse(sqsRecord.body);
+    const s3Records = s3Event.Records || [];
 
-      for (const s3Record of s3Records) {
-        const Bucket = s3Record.s3.bucket.name;
-        const rawKey = s3Record.s3.object.key;
-        const Key = decodeURIComponent(rawKey.replace(/\+/g, " "));
+    for (const s3Record of s3Records) {
+      const Bucket = s3Record.s3.bucket.name;
+      const rawKey = s3Record.s3.object.key;
+      const Key = decodeURIComponent(rawKey.replace(/\+/g, " "));
 
-        const parts = Key.split("/");
-        const [userId, chatId, fileId] = parts;
+      const parts = Key.split("/");
+      const [userId, chatId, fileId] = parts;
 
-        if (!userId || !chatId || !fileId) {
-          throw new Error(
-            `[ProcessFileLambda] Invalid S3 key schema "${Key}". Expected "userId/chatId/fileId"`
-          );
-        }
+      if (!userId || !chatId || !fileId) {
+        console.error(
+          `[ProcessFileLambda] Invalid S3 key schema "${Key}". Expected "userId/chatId/fileId"`
+        );
+        continue;
+      }
 
+      try {
         const response = await s3.getObject({ Bucket, Key });
         const bodyBytes = await response.Body!.transformToByteArray();
         const buffer = Buffer.from(bodyBytes);
@@ -38,10 +40,24 @@ export const handler = async (event: SQSEvent) => {
 
         await paralegalVectorDbClient.deleteFileChunks(userId, fileId); // for idempotency
         await paralegalVectorDbClient.addChunksToParalegal(docs, userId, chatId, fileId);
+
+        // Mark as PROCESSED in DynamoDB
+        await FileService.updateFileStatus(chatId, fileId, "PROCESSED");
+        console.log(`[ProcessFileLambda] Successfully processed and marked PROCESSED: ${Key}`);
+      } catch (fileError: any) {
+        console.error(`[ProcessFileLambda] Processing failed for ${Key}:`, fileError);
+        try {
+          await FileService.updateFileStatus(
+            chatId,
+            fileId,
+            "ERROR",
+            fileError?.message || "Failed to process and vectorize document"
+          );
+        } catch (dbErr) {
+          console.error(`[ProcessFileLambda] Failed to record error status in DynamoDB for ${Key}:`, dbErr);
+        }
+        throw fileError;
       }
     }
-  } catch (error) {
-    console.error("[ProcessFileLambda] Processing failed:", error);
-    throw error;
   }
 };

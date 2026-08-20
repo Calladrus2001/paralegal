@@ -37,7 +37,7 @@ export const MessageList: React.FC = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  if (messages.length === 0 && !isSending) {
+  if (!activeChat && messages.length === 0 && !isSending) {
     return (
       <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center justify-center text-center">
         <div className="card-editorial max-w-md w-full p-8 shadow-xs">
@@ -46,7 +46,7 @@ export const MessageList: React.FC = () => {
           </div>
 
           <h3 className="text-base font-semibold text-editorial-text m-0 mb-1">
-            {activeChat?.chatTitle || "New Consultation"}
+            New Consultation
           </h3>
 
           <p className="text-xs text-editorial-muted m-0 mb-6 leading-relaxed">

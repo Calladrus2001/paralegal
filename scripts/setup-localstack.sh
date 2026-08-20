@@ -8,6 +8,14 @@ docker rm $(docker ps -aq) 2>/dev/null || true
 # Determine if we should start dev tools (skip if CI is true)
 IS_CI=${CI:-false}
 
+# Get absolute path to the infra directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  echo "OPENAI_API_KEY=${OPENAI_API_KEY}" > "$PROJECT_ROOT/.env"
+fi
+
 if [ "$IS_CI" = "true" ]; then
   export LOCALSTACK_HOST="aws.paralegal.vishesh-dugar.me"
 fi
