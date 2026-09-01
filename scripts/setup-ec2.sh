@@ -86,7 +86,8 @@ $UI_DOMAIN {
 }
 EOF
 
-echo "🔄 Restarting Caddy..."
+echo "🔄 Restarting Caddy"
+sudo chmod 755 /home/ubuntu
 sudo systemctl restart caddy
 
 echo "--------------------------------------------------"
