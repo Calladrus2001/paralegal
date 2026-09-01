@@ -60,15 +60,23 @@ jobs:
             fi
 
             chmod +x ./scripts/setup-localstack.sh
-            CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
+            
+            sg docker -c "CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh"
+            
             export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             export AWS_DEFAULT_ENDPOINT="https://aws.paralegal.vishesh-dugar.me"
+            
+            source ~/.bashrc 2>/dev/null || true
+            export PATH="$HOME/.bun/bin:$PATH"
+            
             bun install
             bun x --bun vite build
-            pm2 start src/common/run-with-env.ts \
+            
+            npx pm2 start src/common/run-with-env.ts \
               --name "paralegal-app" \
               --interpreter bun \
               --update-env \
               -- config/local.json src/server/index.ts || \
-            pm2 restart "paralegal-app" --update-env
-            pm2 save
+            npx pm2 restart "paralegal-app" --update-env
+            
+            npx pm2 save
