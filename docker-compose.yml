@@ -15,6 +15,8 @@ services:
       ENABLE_MODULES: text2vec-openai
       OPENAI_APIKEY: ${OPENAI_API_KEY}
       CLUSTER_HOSTNAME: "node1"
+    volumes:
+      - weaviate_data:/var/lib/weaviate
 
   localstack:
     image: localstack/localstack:4.13.0
@@ -25,6 +27,7 @@ services:
     environment:
       - SERVICES=s3,dynamodb,sqs,lambda,iam
       - DEBUG=1
+      - PERSISTENCE=1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
       - AWS_DEFAULT_REGION=ap-south-1
@@ -33,6 +36,7 @@ services:
       - S3_SKIP_SIGNATURE_VALIDATION=1
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
+      - localstack_data:/var/lib/localstack
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 10s
@@ -59,6 +63,8 @@ services:
     restart: unless-stopped
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
 
   redisinsight:
     image: redis/redisinsight:latest
@@ -72,3 +78,8 @@ services:
       - RI_REDIS_ALIAS=Paralegal-Redis
     depends_on:
       - redis
+
+volumes:
+  weaviate_data:
+  localstack_data:
+  redis_data:

@@ -28,6 +28,9 @@ jobs:
 
       - name: Terraform Init & Apply (Host)
         working-directory: infra/host
+        env:
+          TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         run: |
           terraform init
           terraform apply -auto-approve

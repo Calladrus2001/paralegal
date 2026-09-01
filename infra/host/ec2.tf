@@ -77,11 +77,29 @@ resource "aws_instance" "paralegal_server" {
   }
 }
 
-resource "aws_eip" "paralegal_eip" {
-  instance = aws_instance.paralegal_server.id
-  domain   = "vpc"
+resource "cloudflare_record" "paralegal_ui" {
+  zone_id = var.cloudflare_zone_id
+  name    = "paralegal"
+  value   = aws_instance.paralegal_server.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 60
+}
 
-  tags = {
-    Name = "${var.project_name}-eip"
-  }
+resource "cloudflare_record" "paralegal_api" {
+  zone_id = var.cloudflare_zone_id
+  name    = "api.paralegal"
+  value   = aws_instance.paralegal_server.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 60
+}
+
+resource "cloudflare_record" "paralegal_aws" {
+  zone_id = var.cloudflare_zone_id
+  name    = "aws.paralegal"
+  value   = aws_instance.paralegal_server.public_ip
+  type    = "A"
+  proxied = false
+  ttl     = 60
 }
