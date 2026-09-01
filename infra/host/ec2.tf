@@ -57,6 +57,10 @@ resource "aws_instance" "paralegal_server" {
   instance_type          = var.instance_type
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+  
+  # This trick forces Terraform to destroy and recreate the instance 
+  # when the instance_type changes, bypassing the AWS Spot API restriction
+  user_data = var.instance_type
 
   instance_market_options {
     market_type = "spot"
