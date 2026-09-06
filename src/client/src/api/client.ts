@@ -90,13 +90,23 @@ export async function apiSendQuery(params: {
   userId: string;
   chatId: string;
   query: string;
-}): Promise<{ responseId: string; response: string }> {
+}): Promise<{
+  responseId: string;
+  response: string;
+  isFeedbackApplicable: boolean;
+  retrievedChunkIds?: string[];
+}> {
   const res = await fetch(`${API_BASE}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(params),
   });
-  return handleResponse<{ responseId: string; response: string }>(res);
+  return handleResponse<{
+    responseId: string;
+    response: string;
+    isFeedbackApplicable: boolean;
+    retrievedChunkIds?: string[];
+  }>(res);
 }
 
 /**

@@ -2,13 +2,11 @@ import { Router } from "express";
 import { validateBodyMiddleware } from "../middleware/validateBodyMiddleware";
 import { ChatRequestSchema } from "../../types/query";
 import type { ChatRequest } from "../../types/query";
-import { model } from "../clients/openai";
-import paralegalVectorDbClient from "../clients/weaviate";
 import { ChatService } from "../services/chat";
 import { nanoid } from "nanoid";
-import { buildQaMessages } from "../tools";
 import { ReputationService } from "../services/reputation";
 import { QuotaService } from "../services/quota";
+import { AgentService } from "../services/agent";
 
 const router = Router();
 
@@ -24,33 +22,27 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
       return;
     }
 
-    const chunks = await paralegalVectorDbClient.search({ query, userId, chatId });
-    const messages = await buildQaMessages(chatId, query, chunks);
-    const response = await model.invoke(messages);
+    const { response, retrievedChunkIds, retrievedScores, isFeedbackApplicable } =
+      await AgentService.processQuery(userId, chatId, query);
 
     await QuotaService.deductQuota().catch((quotaErr) =>
       console.error("[QueryRouter] Failed to deduct quota:", quotaErr)
     );
 
     const responseId = nanoid();
-    const assistantResponse = response.content as string;
 
-    const retrievedChunkIds = chunks.map((c) => c.id).filter(Boolean);
-    const retrievedScores = chunks.map((c) => c.score).filter((s) => s != null);
-
-    // Reliably persist message to DynamoDB
     await ChatService.addMessage({
       responseId,
       chatId,
       userId,
       query,
-      response: assistantResponse,
+      response,
+      isFeedbackApplicable,
       retrievedChunkIds,
       retrievedScores,
       createdAt: new Date().toISOString(),
     });
 
-    // Increment retrieval counts in background without blocking response
     if (retrievedChunkIds.length > 0) {
       Promise.allSettled(
         retrievedChunkIds.map((chunkId: string) =>
@@ -59,7 +51,7 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
       ).catch((err) => console.error("[QueryRouter] Background reputation error:", err));
     }
 
-    res.json({ responseId, response: assistantResponse });
+    res.json({ responseId, response, isFeedbackApplicable, retrievedChunkIds });
   } catch (err: any) {
     console.error("[QueryRouter] QA error:", err);
     res.status(500).json({ error: err.message });

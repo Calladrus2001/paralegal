@@ -85,6 +85,8 @@ export const sendUserQuery = createAsyncThunk(
         response: res.response,
         query: params.query,
         userId: params.userId,
+        isFeedbackApplicable: res.isFeedbackApplicable,
+        retrievedChunkIds: res.retrievedChunkIds ?? [],
       };
     } catch (err: any) {
       return rejectWithValue({
@@ -185,12 +187,13 @@ export const chatSlice = createSlice({
           userId,
           query,
           response: "",
+          isFeedbackApplicable: false,
           createdAt: new Date().toISOString(),
         });
       })
       .addCase(sendUserQuery.fulfilled, (state, action) => {
         state.isSendingQuery = false;
-        const { chatId, responseId, response } = action.payload;
+        const { chatId, responseId, response, isFeedbackApplicable } = action.payload;
         if (state.activeChatId === chatId) {
           const pendingIndex = state.messages.findIndex(
             (m) => m.responseId === `pending-${action.meta.requestId}`
@@ -201,6 +204,8 @@ export const chatSlice = createSlice({
               ...state.messages[pendingIndex]!,
               responseId,
               response,
+              isFeedbackApplicable,
+              retrievedChunkIds: action.payload.retrievedChunkIds,
             };
           } else {
             state.messages.push({
@@ -209,6 +214,8 @@ export const chatSlice = createSlice({
               userId: action.payload.userId,
               query: action.payload.query,
               response,
+              isFeedbackApplicable,
+              retrievedChunkIds: action.payload.retrievedChunkIds,
               createdAt: new Date().toISOString(),
             });
           }

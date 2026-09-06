@@ -47,6 +47,7 @@ export interface MessageRecord {
   userId: string;
   query: string;
   response: string;
+  isFeedbackApplicable: boolean;
   retrievedChunkIds?: string[];
   retrievedScores?: number[];
   model?: string;

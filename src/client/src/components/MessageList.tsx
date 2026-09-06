@@ -134,38 +134,42 @@ export const MessageList: React.FC = () => {
                     </div>
 
                     <div className="flex items-center gap-1 text-xs">
-                      {feedbackStatus ? (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
-                          <Check className="w-3 h-3" />
-                          Feedback recorded
-                        </span>
-                      ) : (
+                      {message.isFeedbackApplicable && (
                         <>
-                          <button
-                            onClick={() => onThumbsUp(message.responseId)}
-                            title="Accurate and helpful"
-                            className="btn-ghost p-1.5 gap-1 hover:text-emerald-700"
-                          >
-                            <ThumbsUp className="w-3.5 h-3.5" />
-                            <span className="text-[11px]">Accurate</span>
-                          </button>
+                          {feedbackStatus ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-700 bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">
+                              <Check className="w-3 h-3" />
+                              Feedback recorded
+                            </span>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => onThumbsUp(message.responseId)}
+                                title="Accurate and helpful"
+                                className="btn-ghost p-1.5 gap-1 hover:text-emerald-700"
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                                <span className="text-[11px]">Accurate</span>
+                              </button>
 
-                          <button
-                            onClick={() => onToggleFeedback(message.responseId)}
-                            title="Report inaccurate claim or cite correction"
-                            className={`btn-ghost p-1.5 gap-1 ${
-                              isFeedbackOpen
-                                ? "text-amber-700 bg-amber-50 border-amber-200"
-                                : "hover:text-amber-700"
-                            }`}
-                          >
-                            <ThumbsDown className="w-3.5 h-3.5" />
-                            <span className="text-[11px]">Correct / Dispute</span>
-                          </button>
+                              <button
+                                onClick={() => onToggleFeedback(message.responseId)}
+                                title="Report inaccurate claim or cite correction"
+                                className={`btn-ghost p-1.5 gap-1 ${
+                                  isFeedbackOpen
+                                    ? "text-amber-700 bg-amber-50 border-amber-200"
+                                    : "hover:text-amber-700"
+                                }`}
+                              >
+                                <ThumbsDown className="w-3.5 h-3.5" />
+                                <span className="text-[11px]">Correct / Dispute</span>
+                              </button>
+                            </>
+                          )}
+
+                          <div className="w-px h-3 bg-editorial-border mx-1" />
                         </>
                       )}
-
-                      <div className="w-px h-3 bg-editorial-border mx-1" />
 
                       <button
                         onClick={() => handleCopy(message.response, message.responseId)}
