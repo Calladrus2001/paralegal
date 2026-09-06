@@ -6,6 +6,7 @@ import uploadReducer from "./slices/uploadSlice";
 import feedbackReducer from "./slices/feedbackSlice";
 import toastReducer from "./slices/toastSlice";
 import filesReducer from "./slices/filesSlice";
+import quotaReducer from "./slices/quotaSlice";
 
 export const store = configureStore({
   reducer: {
@@ -15,6 +16,7 @@ export const store = configureStore({
     feedback: feedbackReducer,
     toast: toastReducer,
     files: filesReducer,
+    quota: quotaReducer,
   },
 });
 

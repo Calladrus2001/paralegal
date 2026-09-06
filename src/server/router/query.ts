@@ -8,6 +8,7 @@ import { ChatService } from "../services/chat";
 import { nanoid } from "nanoid";
 import { buildQaMessages } from "../tools";
 import { ReputationService } from "../services/reputation";
+import { QuotaService } from "../services/quota";
 
 const router = Router();
 
@@ -15,9 +16,21 @@ router.post("/", validateBodyMiddleware(ChatRequestSchema), async (req, res) => 
   try {
     const { userId, chatId, query } = req.body as ChatRequest;
 
+    const hasQuota = await QuotaService.hasQuota();
+    if (!hasQuota) {
+      res.status(429).json({
+        error: "Daily query limit reached (0/100 remaining). Resets at 00:00 UTC.",
+      });
+      return;
+    }
+
     const chunks = await paralegalVectorDbClient.search({ query, userId, chatId });
     const messages = await buildQaMessages(chatId, query, chunks);
     const response = await model.invoke(messages);
+
+    await QuotaService.deductQuota().catch((quotaErr) =>
+      console.error("[QueryRouter] Failed to deduct quota:", quotaErr)
+    );
 
     const responseId = nanoid();
     const assistantResponse = response.content as string;

@@ -1,6 +1,7 @@
 import type { Chat, Message } from "../../../types/chat";
 import type { FeedbackSubmissionPayload } from "../../../types/feedback";
 import type { ChatFile } from "../../../types/file";
+import type { QuotaInfo } from "../../../types/quota";
 
 const API_BASE = "/api";
 
@@ -157,3 +158,9 @@ export async function apiSubmitFeedback(payload: FeedbackSubmissionPayload): Pro
   });
   return handleResponse<{ success: boolean; feedbackId: string }>(res);
 }
+
+export async function apiGetQuota(): Promise<QuotaInfo> {
+  const res = await fetch(`${API_BASE}/quota`);
+  return handleResponse<QuotaInfo>(res);
+}
+

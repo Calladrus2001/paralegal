@@ -1,11 +1,11 @@
-import React from "react";
-import { Plus, Upload, MessageSquare, Scale, Trash2, Sparkles } from "lucide-react";
+import { Plus, Upload, MessageSquare, Scale, Trash2, Sparkles, Zap } from "lucide-react";
 import { useAppSelector } from "../store";
 import { useChat } from "../hooks/useChat";
 import { useFileUpload } from "../hooks/useFileUpload";
 
 export const Sidebar: React.FC = () => {
   const userId = useAppSelector((state) => state.user.userId);
+  const { remaining, total, isConnected } = useAppSelector((state) => state.quota);
   const { chats, activeChatId, selectChat, createChat, deleteChat } = useChat();
   const { openModal: onOpenUpload } = useFileUpload();
 
@@ -51,6 +51,47 @@ export const Sidebar: React.FC = () => {
             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
           </div>
           <div className="font-semibold text-editorial-text truncate">{userId}</div>
+        </div>
+
+        <div className="mt-2.5 p-2.5 bg-editorial-surface rounded-lg border border-editorial-border text-xs">
+          <div className="flex items-center justify-between text-editorial-muted mb-1.5">
+            <div className="flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-editorial-muted" />
+              <span className="font-medium text-[11px] uppercase tracking-wider">Daily Queries</span>
+            </div>
+          </div>
+
+          <div className="flex items-baseline justify-between mb-2">
+            <span className="text-sm font-semibold text-editorial-text">
+              {remaining !== null ? remaining : "--"}{" "}
+              <span className="text-xs font-normal text-editorial-muted">/ {total} remaining</span>
+            </span>
+            <span className="text-[11px] font-medium text-editorial-muted">
+              {remaining !== null ? `${Math.round((remaining / total) * 100)}%` : ""}
+            </span>
+          </div>
+
+          <div className="w-full h-1.5 bg-stone-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-300 rounded-full ${
+                remaining === null || remaining > 25
+                  ? "bg-editorial-primary"
+                  : remaining > 10
+                  ? "bg-amber-500"
+                  : "bg-red-500"
+              }`}
+              style={{
+                width: `${
+                  remaining !== null ? Math.min(100, Math.max(0, (remaining / total) * 100)) : 100
+                }%`,
+              }}
+            />
+          </div>
+
+          <div className="mt-1.5 flex items-center justify-between text-[10px] text-editorial-faint">
+            <span>Global daily limit</span>
+            <span>Resets 00:00 UTC</span>
+          </div>
         </div>
       </div>
 
@@ -138,7 +179,6 @@ export const Sidebar: React.FC = () => {
         >
           Platform Guide
         </button>
-        <span>RAG + Fact Verification</span>
       </div>
     </aside>
   );

@@ -8,8 +8,10 @@ import { MessageInput } from "./components/MessageInput";
 import { UploadModal } from "./components/UploadModal";
 import { OnboardingModal } from "./components/OnboardingModal";
 import { ToastContainer } from "./components/ToastContainer";
+import { useQuota } from "./hooks/useQuota";
 
 const ParalegalApp: React.FC = () => {
+  useQuota();
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-editorial-bg text-editorial-text relative">
       <Sidebar />

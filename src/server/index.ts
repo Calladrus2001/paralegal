@@ -6,6 +6,7 @@ import uploadRouter from "./router/upload";
 import queryRouter from "./router/query";
 import feedbackRouter from "./router/feedback";
 import chatRouter from "./router/chat";
+import quotaRouter from "./router/quota";
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -33,6 +34,7 @@ app.use("/api/upload", uploadRouter);
 app.use("/api/query", queryRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/chats", chatRouter);
+app.use("/api/quota", quotaRouter);
 
 app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Unhandled error:", err);

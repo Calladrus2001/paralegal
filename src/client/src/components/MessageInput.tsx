@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
-import { ArrowUp, Paperclip } from "lucide-react";
+import { ArrowUp, Paperclip, AlertCircle } from "lucide-react";
 import { useChat } from "../hooks/useChat";
 import { useFileUpload } from "../hooks/useFileUpload";
+import { useAppSelector } from "../store";
 
 export const MessageInput: React.FC = () => {
   const { activeChat, isSendingQuery: isSending, sendMessage: onSendMessage } = useChat();
   const { openModal: onOpenUpload } = useFileUpload();
+  const { remaining, total } = useAppSelector((state) => state.quota);
+
+  const isQuotaExhausted = remaining !== null && remaining <= 0;
 
   const [text, setText] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -19,7 +23,7 @@ export const MessageInput: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!text.trim() || isSending) return;
+    if (!text.trim() || isSending || isQuotaExhausted) return;
     onSendMessage(text);
     setText("");
     if (textareaRef.current) {
@@ -37,6 +41,15 @@ export const MessageInput: React.FC = () => {
   return (
     <div className="p-4 bg-editorial-bg border-t border-editorial-border flex-shrink-0">
       <div className="max-w-3xl mx-auto">
+        {isQuotaExhausted && (
+          <div className="mb-2.5 p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+            <span className="font-medium">
+              Daily query limit reached (0/{total} remaining). Resets at 00:00 UTC.
+            </span>
+          </div>
+        )}
+
         <form
           onSubmit={handleSubmit}
           className="relative flex items-end gap-2 p-2.5 bg-editorial-surface border border-editorial-border-strong focus-within:border-editorial-primary focus-within:ring-1 focus-within:ring-editorial-primary rounded-2xl shadow-xs transition-all duration-150"
@@ -56,18 +69,20 @@ export const MessageInput: React.FC = () => {
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={
-              activeChat
+              isQuotaExhausted
+                ? "Daily query limit reached (0/100 remaining). Resets at 00:00 UTC."
+                : activeChat
                 ? `Ask a question in "${activeChat.chatTitle}"...`
                 : "Type a legal question or attach a PDF..."
             }
-            disabled={isSending}
+            disabled={isSending || isQuotaExhausted}
             rows={1}
-            className="flex-1 max-h-[180px] bg-transparent text-xs text-editorial-text placeholder:text-editorial-faint resize-none focus:outline-hidden py-1 px-1 leading-relaxed"
+            className="flex-1 max-h-[180px] bg-transparent text-xs text-editorial-text placeholder:text-editorial-faint resize-none focus:outline-hidden py-1 px-1 leading-relaxed disabled:opacity-60 disabled:cursor-not-allowed"
           />
 
           <button
             type="submit"
-            disabled={!text.trim() || isSending}
+            disabled={!text.trim() || isSending || isQuotaExhausted}
             className="w-8 h-8 rounded-xl bg-editorial-primary hover:bg-editorial-primary-hover disabled:bg-editorial-border-strong disabled:cursor-not-allowed text-editorial-primary-fg flex items-center justify-center transition-all duration-150 cursor-pointer flex-shrink-0 shadow-xs"
             aria-label="Send message"
           >
