@@ -25,7 +25,7 @@ variable "server_type" {
 variable "location" {
   description = "Hetzner datacenter location"
   type        = string
-  default     = "sin"
+  default     = "nbg1"
 }
 
 variable "ssh_public_key" {
