@@ -1,5 +1,5 @@
 variable "aws_region" {
-  description = "AWS region for deployment"
+  description = "AWS region for S3 state backend"
   type        = string
   default     = "ap-south-1"
 }
@@ -10,22 +10,28 @@ variable "project_name" {
   default     = "paralegal"
 }
 
-variable "instance_type" {
-  description = "EC2 instance hardware type"
+variable "hcloud_token" {
+  description = "Hetzner Cloud API Token"
   type        = string
-  default     = "t3.medium"
+  sensitive   = true
 }
 
-variable "key_name" {
-  description = "EC2 Key Pair name for SSH access"
+variable "server_type" {
+  description = "Hetzner server type"
   type        = string
-  default     = "paralegal"
+  default     = "cx22"
 }
 
-variable "root_volume_size" {
-  description = "Root EBS volume size in GB"
-  type        = number
-  default     = 30
+variable "location" {
+  description = "Hetzner datacenter location"
+  type        = string
+  default     = "sin"
+}
+
+variable "ssh_public_key" {
+  description = "SSH public key for server access"
+  type        = string
+  default     = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDfffSWbXeqd4jAD26flRoVNrh0gJjRYCAH7bwLEOTjr9d6vL7GT2K1OZXI6ExhQQoy68pITjo/Z+ooerfn5DQd9QkyDDPJnd4MWC4zom2jIGU2JmlV+FO9swL5gRv/wOBIzyts8Ipce0DIJfLLRS/DtqiZgjOoZhOWP5pBjZPAJG+LYTzq5l2UxYf842GItZfzxT/7kYrzQS+HC0H/VE8pq9v63uTMjU3JYA+7w2a8MdxxIOnnjOHY5wlH1McBHHE5a7Y1W5Lcdu+5j8I4EbuusXOmwfrzdM4KJEsZ6PAv4nHjmzj90uW+q4WBdDSM2PdLsr/SBI05nSA+aN9hHebP"
 }
 
 variable "state_bucket_name" {

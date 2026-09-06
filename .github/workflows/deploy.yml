@@ -6,15 +6,15 @@ on:
 
 jobs:
   provision-host:
-    name: Provision Host Infrastructure (AWS EC2 & S3)
+    name: Provision Host Infrastructure (Hetzner & DNS)
     runs-on: ubuntu-latest
     outputs:
-      ec2_host: ${{ steps.tf-output.outputs.ec2_public_ip }}
+      server_ip: ${{ steps.tf-output.outputs.server_ipv4 }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
+      - name: Configure AWS Credentials (for S3 state backend)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -29,6 +29,7 @@ jobs:
       - name: Terraform Init & Apply (Host)
         working-directory: infra/host
         env:
+          TF_VAR_hcloud_token: ${{ secrets.HCLOUD_TOKEN }}
           TF_VAR_cloudflare_api_token: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           TF_VAR_cloudflare_zone_id: ${{ secrets.CLOUDFLARE_ZONE_ID }}
         run: |
@@ -39,32 +40,32 @@ jobs:
         id: tf-output
         working-directory: infra/host
         run: |
-          EC2_IP=$(terraform output -raw ec2_public_ip)
-          echo "ec2_public_ip=$EC2_IP" >> $GITHUB_OUTPUT
+          SERVER_IP=$(terraform output -raw server_ipv4)
+          echo "server_ipv4=$SERVER_IP" >> $GITHUB_OUTPUT
 
   deploy-app:
-    name: Deploy App to EC2
+    name: Deploy App to Hetzner
     needs: provision-host
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy to EC2
+      - name: Deploy to Server
         uses: appleboy/ssh-action@master
         with:
-          host: ${{ needs.provision-host.outputs.ec2_host }}
-          username: ubuntu
+          host: ${{ needs.provision-host.outputs.server_ip }}
+          username: root
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 15m
           script: |
             rm -rf ~/paralegal && git clone https://github.com/${{ github.repository }} ~/paralegal
             cd ~/paralegal
             if ! command -v bun &> /dev/null || ! command -v docker &> /dev/null || ! command -v pm2 &> /dev/null; then
-              chmod +x ./scripts/setup-ec2.sh
-              ./scripts/setup-ec2.sh
+              chmod +x ./scripts/setup-server.sh
+              ./scripts/setup-server.sh
             fi
 
             chmod +x ./scripts/setup-localstack.sh
             
-            sg docker -c "CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh"
+            CI=true OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }} ./scripts/setup-localstack.sh
             
             export OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
             export AWS_DEFAULT_ENDPOINT="https://aws.paralegal.vishesh-dugar.me"

@@ -1,11 +1,11 @@
-output "ec2_public_ip" {
-  description = "Public IP of the EC2 instance"
-  value       = aws_instance.paralegal_server.public_ip
+output "server_ipv4" {
+  description = "Public IPv4 of the Hetzner server"
+  value       = hcloud_server.paralegal.ipv4_address
 }
 
-output "ec2_instance_id" {
-  description = "EC2 Instance ID"
-  value       = aws_instance.paralegal_server.id
+output "server_id" {
+  description = "Hetzner Server ID"
+  value       = hcloud_server.paralegal.id
 }
 
 output "state_bucket_name" {

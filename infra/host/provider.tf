@@ -3,6 +3,10 @@ terraform {
     aws = {
       source = "hashicorp/aws"
     }
+    hcloud = {
+      source  = "hetznercloud/hcloud"
+      version = "~> 1.49"
+    }
     cloudflare = {
       source  = "cloudflare/cloudflare"
       version = "~> 4.0"
@@ -18,6 +22,10 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+}
+
+provider "hcloud" {
+  token = var.hcloud_token
 }
 
 provider "cloudflare" {

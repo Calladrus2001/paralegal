@@ -1,7 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-echo "🚀 Starting EC2 Environment Setup (Ubuntu 24.04 LTS)..."
+echo "🚀 Starting Server Environment Setup (Ubuntu 24.04 LTS)..."
+
+CURRENT_USER=$(whoami)
+USER_HOME=$HOME
 
 # 1. Update System & Install Git
 sudo apt update && sudo apt upgrade -y
@@ -12,7 +15,9 @@ echo "🐳 Installing Docker..."
 sudo apt install -y docker.io
 sudo systemctl enable docker
 sudo systemctl start docker
-sudo usermod -a -G docker ubuntu
+if id -u ubuntu &>/dev/null; then
+    sudo usermod -a -G docker ubuntu || true
+fi
 
 # 3. Install Docker Compose (V2)
 echo "📦 Installing Docker Compose..."
@@ -33,10 +38,10 @@ echo "🥟 Installing Bun..."
 if ! command -v bun &> /dev/null; then
     curl -fsSL https://bun.sh/install | bash
     # Export for the rest of this session
-    export BUN_INSTALL="$HOME/.bun"
+    export BUN_INSTALL="$USER_HOME/.bun"
     export PATH="$BUN_INSTALL/bin:$PATH"
     # Ensure bun is in the system path for GHA
-    sudo ln -sf $HOME/.bun/bin/bun /usr/bin/bun || true
+    sudo ln -sf $USER_HOME/.bun/bin/bun /usr/bin/bun || true
 else
     echo "Bun is already installed."
 fi
@@ -49,7 +54,7 @@ sudo npm install -g pm2
 # Ensure PM2 is in the system path for GHA
 sudo ln -sf $(which pm2) /usr/bin/pm2 || true
 # Configure PM2 to auto-start on system boot
-sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u ubuntu --hp /home/ubuntu || true
+sudo env PATH=$PATH:/usr/bin /usr/lib/node_modules/pm2/bin/pm2 startup systemd -u "$CURRENT_USER" --hp "$USER_HOME" || true
 
 # 8. Install Caddy (Reverse Proxy for SSL)
 echo "🔒 Installing Caddy..."
@@ -79,7 +84,7 @@ $UI_DOMAIN {
     }
 
     handle {
-        root * /home/ubuntu/paralegal/dist/client
+        root * $USER_HOME/paralegal/dist/client
         file_server
         try_files {path} /index.html
     }
@@ -87,10 +92,9 @@ $UI_DOMAIN {
 EOF
 
 echo "🔄 Restarting Caddy"
-sudo chmod 755 /home/ubuntu
+sudo chmod 755 "$USER_HOME"
 sudo systemctl restart caddy
 
 echo "--------------------------------------------------"
 echo "✅ Setup Complete!"
-echo "⚠️  IMPORTANT: Please log out and log back in (or run 'newgrp docker') for Docker permissions to take effect."
 echo "--------------------------------------------------"
