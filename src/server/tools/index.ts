@@ -20,7 +20,7 @@ export const buildQaMessages = async (
   const formattedChunks =
     chunks.length > 0
       ? chunks
-          .map((c) => `<document id="${c.id}">\n${c.text}\n</document>`)
+          .map((c) => `<document>\n${c.text}\n</document>`)
           .join("\n")
       : "No matching documents found.";
 
